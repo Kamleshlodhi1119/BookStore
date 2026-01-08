@@ -1,0 +1,67 @@
+AUTH
+POST /api/auth/register → register
+POST /api/auth/login → login
+PUT /api/auth/profile → update profile
+GET /api/auth → all authors
+GET /api/auth/{id} → author by id
+
+USER
+GET /api/users/me → my profile
+PUT /api/users/me → update my profile
+
+ROLES
+GET /api/roles → all roles
+POST /api/admin/roles → create role (static)
+
+ADMIN USERS
+GET /api/admin/users → all users
+GET /api/admin/users/{id} → user by id
+PUT /api/admin/users/{id}/role → change role
+DELETE /api/admin/users/{id} → delete user
+
+AUTHORS (ADMIN)
+POST /api/admin/users → create author
+PUT /api/admin/users/{id} → update author
+
+BOOKS
+POST /api/books → create book
+PUT /api/books/{id} → update book
+DELETE /api/books/{id} → delete book
+GET /api/books/{id} → book by id
+GET /api/books → all books
+GET /api/books/search?q= → search
+GET /api/books/by-author/{id} → by author
+GET /api/books/top-rated → top rated
+GET /api/books/latest → latest
+
+BOOK STATUS (ADMIN)
+PUT /api/admin/books/{id}/status?active=true|false
+
+CART
+POST /api/cart/add → add item
+GET /api/cart → view cart
+PUT /api/cart/update → update qty
+DELETE /api/cart/remove/{bookId} → remove item
+DELETE /api/cart/clear → clear cart
+
+WISHLIST
+POST /api/wishlist/add/{bookId} → add
+GET /api/wishlist → my wishlist
+DELETE /api/wishlist/remove/{bookId} → remove
+
+ORDERS
+POST /api/orders/place → place order
+GET /api/orders/my → my orders
+GET /api/orders/{id} → order by id
+
+ADMIN ORDERS
+GET /api/admin/orders → all orders
+PUT /api/admin/orders/{id}/status?status=
+
+PAYMENT
+POST /api/payments/initiate → initiate
+POST /api/payments/verify → verify
+
+SYSTEM
+GET /api/config → config
+GET /api/health → health

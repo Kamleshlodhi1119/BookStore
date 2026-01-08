@@ -1,0 +1,118 @@
+# 1. Register NEW user
+curl -X POST http://localhost:8082/api/auth/register -H "Content-Type: application/json" -d "{\"username\": \"kamlesh\", \"email\": \"kamlesh@gmail.com\", \"password\": \"pass123\"}"
+
+#register as the Admin 
+curl -X POST http://localhost:8082/api/auth/register -H "Content-Type: application/json" -d "{\"username\": \"admin\", \"email\": \"admin@gmail.com\", \"password\": \"pass123\"}"
+
+# 2. Check H2 console - password will be HASHED like: $2a$10$...
+# 3. Login
+curl -X POST http://localhost:8082/api/auth/login -H "Content-Type: application/json" -d "{\"email\": \"kamlesh@gmail.com\", \"password\": \"pass123\"}"
+
+
+#add the rating
+
+More? -H "Content-Type: application/json" ^
+More? -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJrYW1sZXNoQGdtYWlsLmNvbSIsInJvbGUiOiJST0xFX1VTRVIiLCJpYXQiOjE3Njc2Mjg5MTAsImV4cCI6MTc2NzcxNTMxMH0.P0Lqk3PA6_WyHX56Xm5v8igawsYi4jrvvkcfpuT_C5E" ^
+More? -d "{\"rating\": 5, \"comment\": \"Excellent book!\", \"username\": \"kamlesh@gmail.com\"}"
+{"message": "Rating added successfully"}
+
+
+############################################
+# BOOKSTORE PROJECT – API TEST COMMANDS
+# Server: http://localhost:8082
+############################################
+
+
+############################################
+# AUTH / USER APIs
+############################################
+
+# 1. Register NEW USER
+curl -X POST http://localhost:8082/api/auth/register \
+-H "Content-Type: application/json" \
+-d "{\"username\":\"kamlesh\",\"email\":\"kamlesh@gmail.com\",\"password\":\"pass123\"}"
+
+
+# 2. Register ADMIN USER
+curl -X POST http://localhost:8082/api/auth/register \
+-H "Content-Type: application/json" \
+-d "{\"username\":\"admin\",\"email\":\"admin@gmail.com\",\"password\":\"pass123\"}"
+
+
+# 3. Login USER (JWT token returned)
+curl -X POST http://localhost:8082/api/auth/login \
+-H "Content-Type: application/json" \
+-d "{\"email\":\"kamlesh@gmail.com\",\"password\":\"pass123\"}"
+
+INSERT INTO users (id, username, email, password, role)
+VALUES
+(1, 'user1', 'user1@gmail.com', '$2a$10$hashedpassword', 'ROLE_USER'),
+(2, 'admin', 'admin@gmail.com', '$2a$10$hashedpassword', 'ROLE_ADMIN');
+
+
+INSERT INTO authors (id, name)
+VALUES
+(1, 'Joshua Bloch'),
+(2, 'Robert C. Martin');
+
+
+INSERT INTO books (
+  id, isbn, title, description, price, stock_quantity,
+  publish_date, author_id, average_rating, active
+) VALUES
+(
+  1,
+  '978-0134685991',
+  'Effective Java',
+  'Best practices for modern Java programming',
+  699.00,
+  50,
+  '2018-01-06',
+  1,
+  4.8,
+  true
+),
+(
+  2,
+  '978-0132350884',
+  'Clean Code',
+  'A Handbook of Agile Software Craftsmanship',
+  799.00,
+  40,
+  '2008-08-11',
+  2,
+  4.7,
+  true
+);
+INSERT INTO cart (id, user_id)
+VALUES (1, 1);
+
+INSERT INTO cart_items (id, cart_id, book_id, quantity)
+VALUES
+(1, 1, 1, 2),
+(2, 1, 2, 1);
+
+INSERT INTO orders (id, user_id, status, total_amount, order_date)
+VALUES
+(101, 1, 'PLACED', 2197.00, CURRENT_DATE);
+
+INSERT INTO order_items (id, order_id, book_id, quantity, price)
+VALUES
+(1, 101, 1, 2, 699.00),
+(2, 101, 2, 1, 799.00);
+INSERT INTO payments (id, order_id, payment_id, status)
+VALUES
+(1, 101, 'PAY123456789', 'SUCCESS');
+
+INSERT INTO ratings (id, book_id, user_id, rating, comment, rated_date)
+VALUES
+(1, 1, 1, 5, 'Excellent book for Java developers', '2025-01-10'),
+(2, 2, 1, 5, 'Must read for clean coding practices', '2025-01-12');
+
+INSERT INTO wishlist (id, user_id, book_id)
+VALUES
+(1, 1, 2);
+
+SELECT * FROM books;
+SELECT * FROM users;
+SELECT * FROM orders;

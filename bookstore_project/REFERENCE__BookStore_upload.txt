@@ -1,0 +1,1546 @@
+package BookStore;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class BookStoreApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(BookStoreApplication.class, args);
+	}
+
+}
+
+package com.BookStore.controller;
+
+import com.BookStore.dto.BookDto;
+import com.BookStore.service.BookService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/books")
+public class BookController {
+
+    @Autowired
+    private BookService bookService;
+
+    @PostMapping("/")
+    public BookDto create(@RequestBody BookDto dto) {
+        return bookService.createBook(dto);
+    }
+
+    @GetMapping("/")
+    public List<BookDto> getAll() {
+        return bookService.getAllBooks();
+    }
+
+    @GetMapping("/{id}")
+    public BookDto get(@PathVariable int id) {
+        return bookService.getBook(id);
+    }
+
+    @PutMapping("/{id}")
+    public BookDto update(@PathVariable int id, @RequestBody BookDto dto) {
+        return bookService.updateBook(id, dto);
+    }
+
+    @DeleteMapping("/{id}")
+    public String delete(@PathVariable int id) {
+        bookService.deleteBook(id);
+        return "Book deleted";
+    }
+}
+
+package com.BookStore.controller;
+
+import com.BookStore.dto.LoginRequest;
+import com.BookStore.dto.RegisterRequest;
+import com.BookStore.security.JwtTokenProvider;
+import com.BookStore.service.UserService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/auth")
+@RequiredArgsConstructor
+public class AuthController {
+
+    private final AuthenticationManager authenticationManager;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final UserService userService;
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+        return ResponseEntity.ok(userService.register(request));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+
+        Authentication authentication = authenticationManager.authenticate(
+              new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+        );
+
+        String token = jwtTokenProvider.generateToken(authentication);
+
+        return ResponseEntity.ok(token);
+    }
+}
+
+package com.BookStore.config;
+
+import com.BookStore.security.JwtAuthenticationFilter;
+import com.BookStore.security.CustomUserDetailsService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+@Configuration
+public class SecurityConfig {
+
+    @Autowired
+    private JwtAuthenticationFilter jwtFilter;
+
+    @Autowired
+    private CustomUserDetailsService userDetailsService;
+
+    @Bean
+    public PasswordEncoder encoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authManager(AuthenticationConfiguration config)
+            throws Exception {
+        return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
+        http.csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/auth/**").permitAll()   // login + register allowed
+                        .anyRequest().authenticated()               // all CRUD needs login
+                )
+                .sessionManagement(sm ->
+                        sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                );
+
+        http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+}
+package com.BookStore.config;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class ModelMapperConfig {
+
+    @Bean
+    public ModelMapper modelMapper() {
+        return new ModelMapper();
+    }
+}
+
+package com.BookStore.dto;
+
+import lombok.Data;
+
+@Data
+public class UserDto {
+    private int user_id;
+    private String username;
+    private String email;
+}
+
+package com.BookStore.dto;
+
+import lombok.Data;
+
+@Data
+public class RegisterRequest {
+
+    private String username;
+    private String email;
+    private String password;
+}
+
+package com.BookStore.dto;
+
+import lombok.Data;
+
+@Data
+public class RatingDto {
+
+    private int rating_id;
+    private int book_id;
+    private int user_id;
+    private int rating_value;
+    private String review_text;
+    private String created_at;
+}
+package com.BookStore.dto;
+
+import lombok.Data;
+import java.util.List;
+
+@Data
+public class PublisherDto {
+
+    private int publisher_id;
+    private String name;
+    private String address;
+    private String contact_email;
+    private String contact_phone;
+    private String website_url;
+    private List<BookDto> books_published;
+}
+package com.BookStore.dto;
+
+import lombok.Data;
+
+@Data
+public class OrderItemDto {
+    private BookDto book;
+    private int quantity;
+    private float price;
+}
+package com.BookStore.dto;
+
+import lombok.Data;
+import java.util.List;
+
+@Data
+public class OrderDto {
+    private int order_id;
+    private int user_id;
+    private List<OrderItemDto> order_items;
+    private float total_price;
+    private String order_status;
+    private String order_date;
+    private String shipping_address;
+    private String payment_method;
+    private CheckoutDto checkout;
+}
+package com.BookStore.dto;
+
+import lombok.Data;
+
+@Data
+public class LoginRequest {
+    private String email;
+    private String password;
+}
+package com.BookStore.dto;
+
+import lombok.Data;
+
+@Data
+public class CheckoutDto {
+    private int checkout_id;
+    private int order_id;
+    private String payment_status;
+    private String payment_date;
+    private String transaction_id;
+    private String payment_method;
+}
+package com.BookStore.dto;
+
+import lombok.Data;
+
+@Data
+public class CartItemDto {
+    private BookDto book;
+    private int quantity;
+}
+package com.BookStore.dto;
+
+import lombok.Data;
+import java.util.List;
+
+@Data
+public class CartDto {
+    private int cart_id;
+    private int user_id;
+    private List<CartItemDto> books;
+    private String created_at;
+    private String updated_at;
+}
+package com.BookStore.dto;
+
+import lombok.Data;
+import java.util.List;
+
+@Data
+public class BookDto {
+
+    private int book_id;
+    private String isbn;
+    private String title;
+    private List<AuthorDto> authors;
+    private PublisherDto publisher;
+    private String publication_date;
+    private List<String> genres;
+    private String language;
+    private String description;
+    private String format;
+    private int page_count;
+    private String edition;
+    private float price;
+    private String currency;
+    private int stock_quantity;
+    private String availability_status;
+    private String sku;
+    private int reorder_level;
+    private String created_at;
+    private String updated_at;
+    private boolean is_active;
+    private String shelf_location;
+    private float average_rating;
+    private int reviews_count;
+    private String cover_image_url;
+    private float weight_grams;
+	public int getBook_id() {
+		return book_id;
+	}
+	public void setBook_id(int book_id) {
+		this.book_id = book_id;
+	}
+	public String getIsbn() {
+		return isbn;
+	}
+	public void setIsbn(String isbn) {
+		this.isbn = isbn;
+	}
+	public String getTitle() {
+		return title;
+	}
+	public void setTitle(String title) {
+		this.title = title;
+	}
+	public List<AuthorDto> getAuthors() {
+		return authors;
+	}
+	public void setAuthors(List<AuthorDto> authors) {
+		this.authors = authors;
+	}
+	public PublisherDto getPublisher() {
+		return publisher;
+	}
+	public void setPublisher(PublisherDto publisher) {
+		this.publisher = publisher;
+	}
+	public String getPublication_date() {
+		return publication_date;
+	}
+	public void setPublication_date(String publication_date) {
+		this.publication_date = publication_date;
+	}
+	public List<String> getGenres() {
+		return genres;
+	}
+	public void setGenres(List<String> genres) {
+		this.genres = genres;
+	}
+	public String getLanguage() {
+		return language;
+	}
+	public void setLanguage(String language) {
+		this.language = language;
+	}
+	public String getDescription() {
+		return description;
+	}
+	public void setDescription(String description) {
+		this.description = description;
+	}
+	public String getFormat() {
+		return format;
+	}
+	public void setFormat(String format) {
+		this.format = format;
+	}
+	public int getPage_count() {
+		return page_count;
+	}
+	public void setPage_count(int page_count) {
+		this.page_count = page_count;
+	}
+	public String getEdition() {
+		return edition;
+	}
+	public void setEdition(String edition) {
+		this.edition = edition;
+	}
+	public float getPrice() {
+		return price;
+	}
+	public void setPrice(float price) {
+		this.price = price;
+	}
+	public String getCurrency() {
+		return currency;
+	}
+	public void setCurrency(String currency) {
+		this.currency = currency;
+	}
+	public int getStock_quantity() {
+		return stock_quantity;
+	}
+	public void setStock_quantity(int stock_quantity) {
+		this.stock_quantity = stock_quantity;
+	}
+	public String getAvailability_status() {
+		return availability_status;
+	}
+	public void setAvailability_status(String availability_status) {
+		this.availability_status = availability_status;
+	}
+	public String getSku() {
+		return sku;
+	}
+	public void setSku(String sku) {
+		this.sku = sku;
+	}
+	public int getReorder_level() {
+		return reorder_level;
+	}
+	public void setReorder_level(int reorder_level) {
+		this.reorder_level = reorder_level;
+	}
+	public String getCreated_at() {
+		return created_at;
+	}
+	public void setCreated_at(String created_at) {
+		this.created_at = created_at;
+	}
+	public String getUpdated_at() {
+		return updated_at;
+	}
+	public void setUpdated_at(String updated_at) {
+		this.updated_at = updated_at;
+	}
+	public boolean isIs_active() {
+		return is_active;
+	}
+	public void setIs_active(boolean is_active) {
+		this.is_active = is_active;
+	}
+	public String getShelf_location() {
+		return shelf_location;
+	}
+	public void setShelf_location(String shelf_location) {
+		this.shelf_location = shelf_location;
+	}
+	public float getAverage_rating() {
+		return average_rating;
+	}
+	public void setAverage_rating(float average_rating) {
+		this.average_rating = average_rating;
+	}
+	public int getReviews_count() {
+		return reviews_count;
+	}
+	public void setReviews_count(int reviews_count) {
+		this.reviews_count = reviews_count;
+	}
+	public String getCover_image_url() {
+		return cover_image_url;
+	}
+	public void setCover_image_url(String cover_image_url) {
+		this.cover_image_url = cover_image_url;
+	}
+	public float getWeight_grams() {
+		return weight_grams;
+	}
+	public void setWeight_grams(float weight_grams) {
+		this.weight_grams = weight_grams;
+	}
+	public BookDto(int book_id, String isbn, String title, List<AuthorDto> authors, PublisherDto publisher,
+			String publication_date, List<String> genres, String language, String description, String format,
+			int page_count, String edition, float price, String currency, int stock_quantity,
+			String availability_status, String sku, int reorder_level, String created_at, String updated_at,
+			boolean is_active, String shelf_location, float average_rating, int reviews_count, String cover_image_url,
+			float weight_grams) {
+		super();
+		this.book_id = book_id;
+		this.isbn = isbn;
+		this.title = title;
+		this.authors = authors;
+		this.publisher = publisher;
+		this.publication_date = publication_date;
+		this.genres = genres;
+		this.language = language;
+		this.description = description;
+		this.format = format;
+		this.page_count = page_count;
+		this.edition = edition;
+		this.price = price;
+		this.currency = currency;
+		this.stock_quantity = stock_quantity;
+		this.availability_status = availability_status;
+		this.sku = sku;
+		this.reorder_level = reorder_level;
+		this.created_at = created_at;
+		this.updated_at = updated_at;
+		this.is_active = is_active;
+		this.shelf_location = shelf_location;
+		this.average_rating = average_rating;
+		this.reviews_count = reviews_count;
+		this.cover_image_url = cover_image_url;
+		this.weight_grams = weight_grams;
+	}
+    
+    
+    
+    
+    
+    
+}
+package com.BookStore.dto;
+
+import lombok.Data;
+import java.util.List;
+
+@Data
+public class AuthorDto {
+    private int author_id;
+    private String name;
+    private String biography;
+    private String date_of_birth;
+    private String nationality;
+    private List<BookDto> books;
+}
+
+package com.BookStore.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+import java.time.Instant;
+import java.util.*;
+
+@Entity
+@Table(name = "users")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+public class User {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long userId;
+
+    @Column(unique = true)
+    private String username;
+    @Column(unique = true)
+    private String email;
+    private String passwordHash;
+    private Instant createdAt;
+    private Instant updatedAt;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_roles")
+    @Column(name = "role")
+    private Set<String> roles = new HashSet<>();
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Cart cart;
+
+    @OneToMany(mappedBy = "user")
+    private Set<Order> orders = new HashSet<>();
+
+    @PrePersist
+    public void prePersist() {
+        createdAt = Instant.now();
+        updatedAt = createdAt;
+    }
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = Instant.now();
+    }
+	public Long getUserId() {
+		return userId;
+	}
+	public void setUserId(Long userId) {
+		this.userId = userId;
+	}
+	public String getUsername() {
+		return username;
+	}
+	public void setUsername(String username) {
+		this.username = username;
+	}
+	public String getEmail() {
+		return email;
+	}
+	public void setEmail(String email) {
+		this.email = email;
+	}
+	public String getPasswordHash() {
+		return passwordHash;
+	}
+	public void setPasswordHash(String passwordHash) {
+		this.passwordHash = passwordHash;
+	}
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+	public void setCreatedAt(Instant createdAt) {
+		this.createdAt = createdAt;
+	}
+	public Instant getUpdatedAt() {
+		return updatedAt;
+	}
+	public void setUpdatedAt(Instant updatedAt) {
+		this.updatedAt = updatedAt;
+	}
+	public Set<String> getRoles() {
+		return roles;
+	}
+	public void setRoles(Set<String> roles) {
+		this.roles = roles;
+	}
+	public Cart getCart() {
+		return cart;
+	}
+	public void setCart(Cart cart) {
+		this.cart = cart;
+	}
+	public Set<Order> getOrders() {
+		return orders;
+	}
+	public void setOrders(Set<Order> orders) {
+		this.orders = orders;
+	}
+    
+    
+    
+    
+}
+package com.BookStore.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.*;
+import java.time.Instant;
+
+
+@Entity @Table(name="ratings")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+public class Rating {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long ratingId;
+    @ManyToOne @JoinColumn(name="book_id")
+    private Book book;
+    @ManyToOne @JoinColumn(name="user_id")
+    private User user;
+    private Integer ratingValue;
+    @Column(columnDefinition = "TEXT")
+    private String reviewText;
+    private Instant createdAt;
+    @PrePersist public void onCreate(){ createdAt = Instant.now(); }
+}
+package com.BookStore.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+import java.util.*;
+
+@Entity
+@Table(name = "publishers")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+public class Publisher {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long publisherId;
+    private String name;
+    private String address;
+    private String contactEmail;
+    private String contactPhone;
+    private String websiteUrl;
+
+    @OneToMany(mappedBy = "publisher")
+    private Set<Book> booksPublished = new HashSet<>();
+}
+package com.BookStore.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.*;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity @Table(name="order_items")
+
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+public class OrderItem {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne @JoinColumn(name="order_id")
+    private Order order;
+
+    @ManyToOne @JoinColumn(name="book_id")
+    private Book book;
+
+    private Integer quantity;
+    private Double price;
+}
+package com.BookStore.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.*;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+@Entity @Table(name="orders")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+public class Order {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long orderId;
+
+    @ManyToOne
+    @JoinColumn(name="user_id")
+    private User user;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderItem> orderItems = new ArrayList<>();
+
+    private Double totalPrice;
+    private String orderStatus;
+    private Instant orderDate;
+    private String shippingAddress;
+    private String paymentMethod;
+    // checkout details can be stored or separate entity
+}
+package com.BookStore.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.*;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = "cart_items")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+public class CartItem {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "cart_id")
+    private Cart cart;
+
+    @ManyToOne
+    @JoinColumn(name = "book_id")
+    private Book book;
+
+    private Integer quantity;
+}
+package com.BookStore.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.*;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+@Entity
+@Table(name = "carts")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+public class Cart {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long cartId;
+
+    @OneToOne
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CartItem> items = new ArrayList<>();
+
+    private Instant createdAt;
+    private Instant updatedAt;
+
+    @PrePersist public void onCreate(){ createdAt = Instant.now(); updatedAt = createdAt;}
+    @PreUpdate public void onUpdate(){ updatedAt = Instant.now(); }
+}
+package com.BookStore.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+import java.time.Instant;
+import java.util.*;
+
+@Entity
+@Table(name = "books")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+public class Book {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long bookId;
+
+    @Column(unique = true)
+    private String isbn;
+    private String title;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "book_authors",
+        joinColumns = @JoinColumn(name = "book_id"),
+        inverseJoinColumns = @JoinColumn(name = "author_id")
+    )
+    private Set<Author> authors = new HashSet<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "publisher_id")
+    private Publisher publisher;
+
+    private Instant publicationDate;
+    @ElementCollection
+    private Set<String> genres = new HashSet<>();
+    private String language;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    private String formatType;
+    private Integer pageCount;
+    private String edition;
+    private Double price;
+    private String currency;
+    private Integer stockQuantity;
+    private String availabilityStatus;
+    private String sku;
+    private Integer reorderLevel;
+    private Instant createdAt;
+    private Instant updatedAt;
+    private Boolean isActive;
+    private String shelfLocation;
+    private Double averageRating;
+    private Integer reviewsCount;
+    private String coverImageUrl;
+    private Double weightGrams;
+
+    @PrePersist
+    public void onCreate() {
+        createdAt = Instant.now();
+        updatedAt = createdAt;
+        if (isActive == null) isActive = true;
+    }
+
+    @PreUpdate
+    public void onUpdate() {
+        updatedAt = Instant.now();
+    }
+
+	public Long getBookId() {
+		return bookId;
+	}
+
+	public void setBookId(Long bookId) {
+		this.bookId = bookId;
+	}
+
+	public String getIsbn() {
+		return isbn;
+	}
+
+	public void setIsbn(String isbn) {
+		this.isbn = isbn;
+	}
+
+	public String getTitle() {
+		return title;
+	}
+
+	public void setTitle(String title) {
+		this.title = title;
+	}
+
+	public Set<Author> getAuthors() {
+		return authors;
+	}
+
+	public void setAuthors(Set<Author> authors) {
+		this.authors = authors;
+	}
+
+	public Publisher getPublisher() {
+		return publisher;
+	}
+
+	public void setPublisher(Publisher publisher) {
+		this.publisher = publisher;
+	}
+
+	public Instant getPublicationDate() {
+		return publicationDate;
+	}
+
+	public void setPublicationDate(Instant publicationDate) {
+		this.publicationDate = publicationDate;
+	}
+
+	public Set<String> getGenres() {
+		return genres;
+	}
+
+	public void setGenres(Set<String> genres) {
+		this.genres = genres;
+	}
+
+	public String getLanguage() {
+		return language;
+	}
+
+	public void setLanguage(String language) {
+		this.language = language;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public String getFormatType() {
+		return formatType;
+	}
+
+	public void setFormatType(String formatType) {
+		this.formatType = formatType;
+	}
+
+	public Integer getPageCount() {
+		return pageCount;
+	}
+
+	public void setPageCount(Integer pageCount) {
+		this.pageCount = pageCount;
+	}
+
+	public String getEdition() {
+		return edition;
+	}
+
+	public void setEdition(String edition) {
+		this.edition = edition;
+	}
+
+	public Double getPrice() {
+		return price;
+	}
+
+	public void setPrice(Double price) {
+		this.price = price;
+	}
+
+	public String getCurrency() {
+		return currency;
+	}
+
+	public void setCurrency(String currency) {
+		this.currency = currency;
+	}
+
+	public Integer getStockQuantity() {
+		return stockQuantity;
+	}
+
+	public void setStockQuantity(Integer stockQuantity) {
+		this.stockQuantity = stockQuantity;
+	}
+
+	public String getAvailabilityStatus() {
+		return availabilityStatus;
+	}
+
+	public void setAvailabilityStatus(String availabilityStatus) {
+		this.availabilityStatus = availabilityStatus;
+	}
+
+	public String getSku() {
+		return sku;
+	}
+
+	public void setSku(String sku) {
+		this.sku = sku;
+	}
+
+	public Integer getReorderLevel() {
+		return reorderLevel;
+	}
+
+	public void setReorderLevel(Integer reorderLevel) {
+		this.reorderLevel = reorderLevel;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public void setCreatedAt(Instant createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
+	}
+
+	public void setUpdatedAt(Instant updatedAt) {
+		this.updatedAt = updatedAt;
+	}
+
+	public Boolean getIsActive() {
+		return isActive;
+	}
+
+	public void setIsActive(Boolean isActive) {
+		this.isActive = isActive;
+	}
+
+	public String getShelfLocation() {
+		return shelfLocation;
+	}
+
+	public void setShelfLocation(String shelfLocation) {
+		this.shelfLocation = shelfLocation;
+	}
+
+	public Double getAverageRating() {
+		return averageRating;
+	}
+
+	public void setAverageRating(Double averageRating) {
+		this.averageRating = averageRating;
+	}
+
+	public Integer getReviewsCount() {
+		return reviewsCount;
+	}
+
+	public void setReviewsCount(Integer reviewsCount) {
+		this.reviewsCount = reviewsCount;
+	}
+
+	public String getCoverImageUrl() {
+		return coverImageUrl;
+	}
+
+	public void setCoverImageUrl(String coverImageUrl) {
+		this.coverImageUrl = coverImageUrl;
+	}
+
+	public Double getWeightGrams() {
+		return weightGrams;
+	}
+
+	public void setWeightGrams(Double weightGrams) {
+		this.weightGrams = weightGrams;
+	}
+
+	public Book(Long bookId, String isbn, String title, Set<Author> authors, Publisher publisher,
+			Instant publicationDate, Set<String> genres, String language, String description, String formatType,
+			Integer pageCount, String edition, Double price, String currency, Integer stockQuantity,
+			String availabilityStatus, String sku, Integer reorderLevel, Instant createdAt, Instant updatedAt,
+			Boolean isActive, String shelfLocation, Double averageRating, Integer reviewsCount, String coverImageUrl,
+			Double weightGrams) {
+		super();
+		this.bookId = bookId;
+		this.isbn = isbn;
+		this.title = title;
+		this.authors = authors;
+		this.publisher = publisher;
+		this.publicationDate = publicationDate;
+		this.genres = genres;
+		this.language = language;
+		this.description = description;
+		this.formatType = formatType;
+		this.pageCount = pageCount;
+		this.edition = edition;
+		this.price = price;
+		this.currency = currency;
+		this.stockQuantity = stockQuantity;
+		this.availabilityStatus = availabilityStatus;
+		this.sku = sku;
+		this.reorderLevel = reorderLevel;
+		this.createdAt = createdAt;
+		this.updatedAt = updatedAt;
+		this.isActive = isActive;
+		this.shelfLocation = shelfLocation;
+		this.averageRating = averageRating;
+		this.reviewsCount = reviewsCount;
+		this.coverImageUrl = coverImageUrl;
+		this.weightGrams = weightGrams;
+	}
+    
+    
+    
+    
+    
+    
+}
+package com.BookStore.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+import java.time.Instant;
+import java.util.*;
+
+@Entity
+@Table(name = "authors")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+public class Author {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long authorId;
+    private String name;
+
+    @Column(columnDefinition = "TEXT")
+    private String biography;
+    private Instant dateOfBirth;
+    private String nationality;
+
+    @ManyToMany(mappedBy = "authors")
+    private Set<Book> books = new HashSet<>();
+}
+package com.BookStore.repository;
+
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.BookStore.entity.Book;
+import com.BookStore.entity.User;
+
+public interface UserRepository extends JpaRepository<User, Long>{
+    Optional<User> findByEmail(String email);
+    Optional<User> findByUsername(String username);
+}
+
+package com.BookStore.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.BookStore.entity.Book;
+import com.BookStore.entity.Cart;
+import com.BookStore.entity.Rating;
+
+public interface RatingRepository extends JpaRepository<Rating, Long>{}
+package com.BookStore.repository;
+
+
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.BookStore.entity.Publisher;
+
+public interface PublisherRepository extends JpaRepository<Publisher, Long>{}
+package com.BookStore.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.BookStore.entity.Book;
+import com.BookStore.entity.Cart;
+import com.BookStore.entity.Order;
+
+public interface OrderRepository extends JpaRepository<Order, Long>{}
+
+
+
+package com.BookStore.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.BookStore.entity.Book;
+import com.BookStore.entity.Cart;
+
+public interface CartRepository extends JpaRepository<Cart, Long>{}package com.BookStore.repository;
+
+import com.BookStore.entity.Book;
+
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+public interface BookRepository extends JpaRepository<Book, Long> {
+    Optional<Book> findByIsbn(String isbn);
+}
+package com.BookStore.repository;
+
+import com.BookStore.entity.Author;
+import com.BookStore.entity.Book;
+
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface AuthorRepository extends JpaRepository<Author, Long>{}package com.BookStore.exception;
+
+public class ResourceNotFoundException extends RuntimeException {
+    public ResourceNotFoundException(String msg) {
+        super(msg);
+    }
+}
+package com.BookStore.exception;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+
+@ControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<?> handleNotFound(ResourceNotFoundException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<?> handleBadRequest(BadRequestException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<?> handleGeneral(Exception ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
+package com.BookStore.exception;
+
+public class BadRequestException extends RuntimeException {
+    public BadRequestException(String msg) {
+        super(msg);
+    }
+}
+package com.BookStore.security;
+
+import io.jsonwebtoken.*;
+import org.springframework.stereotype.Component;
+
+import java.util.Date;
+
+@Component
+public class JwtTokenProvider {
+
+    private final String SECRET_KEY = "BOOKSTORE_SECRET_KEY_123";
+
+    public String generateToken(String username) {
+        return Jwts.builder()
+                .setSubject(username)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 86400000))
+                .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
+                .compact();
+    }
+
+    public String extractUsername(String token) {
+        return Jwts.parser()
+                .setSigningKey(SECRET_KEY)
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
+    }
+
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parser()
+                    .setSigningKey(SECRET_KEY)
+                    .parseClaimsJws(token);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+}
+package com.BookStore.security;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+
+@Component
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    @Autowired
+    private JwtTokenProvider jwtProvider;
+
+    @Autowired
+    private CustomUserDetailsService userDetailsService;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
+
+        String header = request.getHeader("Authorization");
+
+        String token = null;
+        String username = null;
+
+        if (header != null && header.startsWith("Bearer ")) {
+            token = header.substring(7);
+            username = jwtProvider.extractUsername(token);
+        }
+
+        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+
+            var userDetails = userDetailsService.loadUserByUsername(username);
+
+            if (jwtProvider.validateToken(token)) {
+                UsernamePasswordAuthenticationToken auth =
+                        new UsernamePasswordAuthenticationToken(userDetails, null,
+                                userDetails.getAuthorities());
+
+                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                SecurityContextHolder.getContext().setAuthentication(auth);
+            }
+        }
+
+        filterChain.doFilter(request, response);
+    }
+}
+package com.BookStore.security;
+
+import com.BookStore.entity.User;
+import com.BookStore.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.*;
+import org.springframework.stereotype.Service;
+
+@Service
+public class CustomUserDetailsService implements UserDetailsService {
+
+    @Autowired
+    private UserRepository userRepo;
+
+    @Override
+    public UserDetails loadUserByUsername(String username)
+            throws UsernameNotFoundException {
+
+        User user = userRepo.findByEmail(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        return org.springframework.security.core.userdetails.User.builder()
+                .username(user.getEmail())
+//                .password(user.getPassword())
+                .roles("USER")
+                .build();
+    }
+}
+package com.BookStore.service;
+
+import com.BookStore.dto.BookDto;
+import java.util.List;
+
+public interface BookService {
+
+    BookDto createBook(BookDto bookDto);
+
+    BookDto updateBook(Long id, BookDto bookDto);
+
+    BookDto getBookById(Long id);
+
+    List<BookDto> getAllBooks();
+
+    void deleteBook(Long id);
+}
+package com.BookStore.service.impl;
+
+import com.BookStore.entity.User;
+import com.BookStore.repository.UserRepository;
+import com.BookStore.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class UserServiceImpl implements UserService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Override
+    public User findByEmail(String email) {
+        return userRepository.findByEmail(email).orElse(null);
+    }
+}
+package com.BookStore.service.impl;
+
+import com.BookStore.dto.BookDto;
+import com.BookStore.entity.Book;
+import com.BookStore.exception.ResourceNotFoundException;
+import com.BookStore.repository.BookRepository;
+import com.BookStore.service.BookService;
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class BookServiceImpl implements BookService {
+
+    @Autowired
+    private BookRepository bookRepository;
+
+    @Autowired
+    private ModelMapper modelMapper;
+
+    private BookDto mapToDto(Book book) {
+        return modelMapper.map(book, BookDto.class);
+    }
+
+    private Book mapToEntity(BookDto dto) {
+        return modelMapper.map(dto, Book.class);
+    }
+
+    @Override
+    public BookDto createBook(BookDto bookDto) {
+        Book book = mapToEntity(bookDto);
+        Book saved = bookRepository.save(book);
+        return mapToDto(saved);
+    }
+
+//    @Override
+//    public BookDto updateBook(Long id, BookDto bookDto) {
+//        Book existing = bookRepository.findById(id)
+//                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + id));
+//
+//        existing.setTitle(bookDto.getTitle());
+//        existing.setAuthors(bookDto.getAuthors());
+//        existing.setPrice(bookDto.getPrice());
+//        existing.setPublisher(bookDto.getPublisher());
+//        existing.setIsbn(bookDto.getIsbn());
+//        existing.setStock(bookDto.getStock());
+//
+//        Book updated = bookRepository.save(existing);
+//
+//        return mapToDto(updated);
+//    }
+
+    @Override
+    public BookDto getBookById(Long id) {
+        Book book = bookRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + id));
+        return mapToDto(book);
+    }
+
+    @Override
+    public List<BookDto> getAllBooks() {
+        return bookRepository.findAll()
+                .stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void deleteBook(Long id) {
+        Book existing = bookRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + id));
+
+        bookRepository.delete(existing);
+    }
+}
+package com.BookStore.service;
+
+import com.BookStore.entity.User;
+
+public interface UserService {
+    User findByEmail(String email);
+}
+package com.BookStore.service;
+
+import com.BookStore.entity.User;
+import com.BookStore.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+
+@Service
+public class CustomUserDetailsService implements UserDetailsService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+
+        return org.springframework.security.core.userdetails.User
+                .builder()
+                .username(user.getEmail())
+                .password(user.getPasswordHash())
+//                .roles(user.getRoles())
+                .build();
+    }
+}
