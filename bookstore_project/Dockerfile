@@ -21,4 +21,4 @@ ENV PORT=8082
 EXPOSE 8082
 
 # This command forces Spring to use Render's dynamic port
-ENTRYPOINT ["java", "-Dserver.port=${PORT}", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Djava.net.preferIPv4Stack=true", "-Dserver.port=${PORT}", "-jar", "app.jar"]
