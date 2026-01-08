@@ -14,10 +14,10 @@ public class OrderController {
 
 	private final OrderService orderService;
 
-	public OrderController(OrderService orderService) {
-		super();
-		this.orderService = orderService;
-	}
+//	public OrderController(OrderService orderService) {
+//		super();
+//		this.orderService = orderService;
+//	}
 
 	@PostMapping("/place")
 	public Order place() {

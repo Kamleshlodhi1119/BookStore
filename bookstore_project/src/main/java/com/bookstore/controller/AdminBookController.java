@@ -25,11 +25,11 @@ public class AdminBookController {
     private final BookService bookService;
     private final BookRepository bookRepository;
 
-    public AdminBookController(BookService bookService, BookRepository bookRepository) {
-        super();
-        this.bookService = bookService;
-        this.bookRepository = bookRepository;
-    }
+//    public AdminBookController(BookService bookService, BookRepository bookRepository) {
+//        super();
+//        this.bookService = bookService;
+//        this.bookRepository = bookRepository;
+//    }
 
     // ---------------- CREATE BOOK ----------------
     @PostMapping

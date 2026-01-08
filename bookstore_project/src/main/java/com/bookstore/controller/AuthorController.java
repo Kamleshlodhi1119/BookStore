@@ -20,10 +20,10 @@ public class AuthorController {
     
     
 
-    public AuthorController(AuthorService authorService) {
-		super();
-		this.authorService = authorService;
-	}
+//    public AuthorController(AuthorService authorService) {
+//		super();
+//		this.authorService = authorService;
+//	}
 
 
 

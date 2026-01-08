@@ -23,11 +23,11 @@ public class RatingServiceImpl implements RatingService {
     private final BookRepository bookRepository;
     private final RatingRepository ratingRepository;
 
-    public RatingServiceImpl(BookRepository bookRepository, RatingRepository ratingRepository) {
-		super();
-		this.bookRepository = bookRepository;
-		this.ratingRepository = ratingRepository;
-	}
+//    public RatingServiceImpl(BookRepository bookRepository, RatingRepository ratingRepository) {
+//		super();
+//		this.bookRepository = bookRepository;
+//		this.ratingRepository = ratingRepository;
+//	}
     @Override
     public void addRating(Long bookId, Integer rating, String comment, String username) {
         // 1. Get real identity from Token

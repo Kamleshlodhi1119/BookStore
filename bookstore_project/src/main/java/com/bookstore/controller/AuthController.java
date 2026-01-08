@@ -32,14 +32,14 @@ public class AuthController {
 
 	private final AuthorService authorService;
 
-	public AuthController(AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider,
-			UserService userService, AuthorService authorService) {
-		super();
-		this.authenticationManager = authenticationManager;
-		this.jwtTokenProvider = jwtTokenProvider;
-		this.userService = userService;
-		this.authorService = authorService;
-	}
+//	public AuthController(AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider,
+//			UserService userService, AuthorService authorService) {
+//		super();
+//		this.authenticationManager = authenticationManager;
+//		this.jwtTokenProvider = jwtTokenProvider;
+//		this.userService = userService;
+//		this.authorService = authorService;
+//	}
 
 	@PostMapping("/register")
 	public ResponseEntity<?> register(@RequestBody RegisterRequest request) {

@@ -14,10 +14,10 @@ public class AdminOrderController {
 
 	private final OrderService orderService;
 
-	public AdminOrderController(OrderService orderService) {
-		super();
-		this.orderService = orderService;
-	}
+//	public AdminOrderController(OrderService orderService) {
+//		super();
+//		this.orderService = orderService;
+//	}
 
 	@GetMapping
 	public List<Order> allOrders() {

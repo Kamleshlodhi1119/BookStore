@@ -31,11 +31,11 @@ public class SecurityConfig {
 	private final JwtAuthenticationFilter jwtFilter;
 	private final CustomUserDetailsService userDetailsService;
 
-	public SecurityConfig(JwtAuthenticationFilter jwtFilter, CustomUserDetailsService userDetailsService) {
-		super();
-		this.jwtFilter = jwtFilter;
-		this.userDetailsService = userDetailsService;
-	}
+//	public SecurityConfig(JwtAuthenticationFilter jwtFilter, CustomUserDetailsService userDetailsService) {
+//		super();
+//		this.jwtFilter = jwtFilter;
+//		this.userDetailsService = userDetailsService;
+//	}
 
 	@Bean
 	public PasswordEncoder passwordEncoder() {

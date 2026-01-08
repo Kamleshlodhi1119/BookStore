@@ -22,11 +22,11 @@ public class UserServiceImpl implements UserService {
 	private final UserRepository repo;
 	private final PasswordEncoder encoder;
 
-	public UserServiceImpl(UserRepository repo, PasswordEncoder encoder) {
-		super();
-		this.repo = repo;
-		this.encoder = encoder;
-	}
+//	public UserServiceImpl(UserRepository repo, PasswordEncoder encoder) {
+//		super();
+//		this.repo = repo;
+//		this.encoder = encoder;
+//	}
 
 	@Override
 	public User register(RegisterRequest request) {

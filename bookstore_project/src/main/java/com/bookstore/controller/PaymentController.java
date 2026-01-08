@@ -14,10 +14,10 @@ public class PaymentController {
 
 	private final PaymentService paymentService;
 
-	public PaymentController(PaymentService paymentService) {
-		super();
-		this.paymentService = paymentService;
-	}
+//	public PaymentController(PaymentService paymentService) {
+//		super();
+//		this.paymentService = paymentService;
+//	}
 
 	// POST /api/payments/initiate
 	@PostMapping("/initiate")

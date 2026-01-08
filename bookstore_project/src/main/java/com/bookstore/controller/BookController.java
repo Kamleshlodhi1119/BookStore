@@ -29,10 +29,10 @@ public class BookController {
 
 	private final BookService bookService;
 
-	public BookController(BookService bookService) {
-		super();
-		this.bookService = bookService;
-	}
+//	public BookController(BookService bookService) {
+//		super();
+//		this.bookService = bookService;
+//	}
 
 	// ADMIN
 	@PostMapping

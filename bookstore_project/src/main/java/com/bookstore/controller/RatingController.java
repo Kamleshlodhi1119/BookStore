@@ -22,11 +22,11 @@ public class RatingController {
 
    
     
-    public RatingController(RatingService ratingService, RatingRepository ratingRepository) {
-		super();
-		this.ratingService = ratingService;
-		this.ratingRepository = ratingRepository;
-	}
+//    public RatingController(RatingService ratingService, RatingRepository ratingRepository) {
+//		super();
+//		this.ratingService = ratingService;
+//		this.ratingRepository = ratingRepository;
+//	}
 
 	@PostMapping("/{bookId}/rating")
     public ResponseEntity<?> addRating(@PathVariable Long bookId, @RequestBody RatingDto dto) {
