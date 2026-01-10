@@ -1,6 +1,7 @@
 package com.bookstore.config;
 
 import java.util.Arrays;
+import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -147,10 +148,12 @@ public class SecurityConfig {
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
 	    CorsConfiguration configuration = new CorsConfiguration();
-	    configuration.setAllowedOrigins(Arrays.asList("https://books-storeapp.netlify.app"));
-	    configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-	    configuration.setAllowedHeaders(Arrays.asList("*"));
+	    // VITAL: Ensure NO trailing slash and NO extra spaces
+	    configuration.setAllowedOrigins(List.of("https://books-storeapp.netlify.app")); 
+	    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+	    configuration.setAllowedHeaders(List.of("*")); 
 	    configuration.setAllowCredentials(true);
+
 	    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 	    source.registerCorsConfiguration("/**", configuration);
 	    return source;
