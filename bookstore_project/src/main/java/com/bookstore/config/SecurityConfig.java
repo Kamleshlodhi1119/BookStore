@@ -101,7 +101,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowedOrigins(
-            List.of("https://books-storeapp.netlify.app")
+            List.of("https://book-store-ui-xuao.onrender.com")
         );
         config.setAllowedMethods(
             List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
