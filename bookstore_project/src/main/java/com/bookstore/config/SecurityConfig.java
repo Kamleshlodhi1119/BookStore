@@ -50,6 +50,7 @@ public class SecurityConfig {
 
         http
             .cors(Customizer.withDefaults())
+            .cors(Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())
 
             .sessionManagement(sm ->
@@ -97,27 +98,18 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /**
-     * Render / proxy safe CORS config.
-     *
-     * Important:
-     * - For JWT sent in Authorization header we do NOT need credentials (cookies).
-     * - Using addAllowedOriginPattern avoids exact-origin mismatch that can happen behind proxies.
-     */
-    @Bean
+   @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // ✅ REQUIRED for Render / Netlify / any hosted UI
-        config.addAllowedOriginPattern("*");
-        config.setAllowCredentials(false);
+        config.addAllowedOriginPattern("*");   // allow any UI host
+        config.setAllowCredentials(false);     // required for wildcard
 
         config.setAllowedMethods(
             List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
         );
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("Authorization"));
-        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
