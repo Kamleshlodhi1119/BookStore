@@ -108,26 +108,21 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // If frontendUrl is set to "*" in properties, or is empty, allow any origin.
-        // Otherwise allow the exact pattern provided (works with Render proxies).
-        if (frontendUrl != null && !frontendUrl.isBlank() && !"*".equals(frontendUrl.trim())) {
-            // allow the configured frontend (pattern style)
-            config.addAllowedOriginPattern(frontendUrl.trim());
-        } else {
-            // fallback (dev / missing config)
-            config.addAllowedOriginPattern("*");
-        }
-
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        config.setAllowedHeaders(List.of("*"));
-        config.setExposedHeaders(List.of("Authorization")); // keep JWT header visible to browser
-        // IMPORTANT: wildcard origins only accepted by browsers when allowCredentials is false
-        // JWT is header-based, so disabling credentials is correct and safer here.
+        // ✅ REQUIRED for Render / Netlify / any hosted UI
+        config.addAllowedOriginPattern("*");
         config.setAllowCredentials(false);
+
+        config.setAllowedMethods(
+            List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
+        );
+        config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("Authorization"));
         config.setMaxAge(3600L);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
     }
+
 }
