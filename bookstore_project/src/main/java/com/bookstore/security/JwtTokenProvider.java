@@ -14,10 +14,17 @@ public class JwtTokenProvider {
 	private final Key key;
 	private final long expirationMs;
 
+	
 	public JwtTokenProvider(@Value("${bookstore.jwt.secret}") String secret,
 			@Value("${bookstore.jwt.expirationMs}") long expirationMs) {
+		
+		if (secret == null || secret.length() < 32) {
+		    throw new IllegalStateException("JWT secret is missing or too short");
+		}
+
 		this.key = Keys.hmacShaKeyFor(secret.getBytes());
 		this.expirationMs = expirationMs;
+		
 	}
 
 	public String generateToken(String email, String role) {

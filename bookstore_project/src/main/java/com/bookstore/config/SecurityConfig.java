@@ -2,7 +2,6 @@ package com.bookstore.config;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -21,6 +20,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.bookstore.security.JwtAuthenticationFilter;
+
 import lombok.RequiredArgsConstructor;
 
 @Configuration
@@ -30,52 +30,59 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
 
-    // read from application.properties (fallback to "*" if missing)
-    @Value("${bookstore.frontend.url:*}")
-    private String frontendUrl;
-
+    // -------------------------
+    // PASSWORD ENCODER
+    // -------------------------
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    // -------------------------
+    // AUTH MANAGER
+    // -------------------------
     @Bean
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
+    // -------------------------
+    // SECURITY FILTER CHAIN
+    // -------------------------
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
+            // ✅ CORS enabled (uses corsConfigurationSource bean)
             .cors(Customizer.withDefaults())
-            .cors(Customizer.withDefaults())
+
+            // ❌ CSRF not needed (JWT)
             .csrf(csrf -> csrf.disable())
 
+            // ❌ Session not needed (JWT)
             .sessionManagement(sm ->
                 sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
 
             .authorizeHttpRequests(auth -> auth
 
+                // ✅ Allow preflight
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                // ---------- PUBLIC ----------
+                // ---------- PUBLIC APIs ----------
                 .requestMatchers(
                     "/api/auth/**",
                     "/api/books/**",
                     "/api/authors/**",
                     "/api/roles",
                     "/api/health",
-                    "/api/config",
                     "/v3/api-docs/**",
                     "/swagger-ui/**",
-                    "/swagger-ui.html",
-                    "/h2-console/**"
+                    "/swagger-ui.html"
                 ).permitAll()
 
-                // ---------- USER + ADMIN ----------
+                // ---------- USER / ADMIN ----------
                 .requestMatchers(
                     "/api/cart/**",
                     "/api/wishlist/**",
@@ -85,36 +92,47 @@ public class SecurityConfig {
                     "/api/users/me/**"
                 ).hasAnyRole("USER", "ADMIN")
 
-                // ---------- ADMIN ----------
+                // ---------- ADMIN ONLY ----------
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
+                // ---------- EVERYTHING ELSE ----------
                 .anyRequest().authenticated()
-            )
+            );
 
-            .headers(headers -> headers.frameOptions(frame -> frame.disable()));
-
+        // ✅ JWT filter
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-   @Bean
+    // -------------------------
+    // GLOBAL CORS CONFIG
+    // -------------------------
+    @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+
         CorsConfiguration config = new CorsConfiguration();
 
-        config.addAllowedOriginPattern("*");   // allow any UI host
-        config.setAllowCredentials(false);     // required for wildcard
+        // ✅ ONLY Render UI allowed
+        config.addAllowedOrigin("https://book-store-ui-xuao.onrender.com");
+
+        // (optional dev support)
+        // config.addAllowedOrigin("http://localhost:4200");
 
         config.setAllowedMethods(
             List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
         );
+
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("Authorization"));
+
+        // 🔥 JWT header auth → cookies not needed
+        config.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
+
         return source;
     }
-
 }
