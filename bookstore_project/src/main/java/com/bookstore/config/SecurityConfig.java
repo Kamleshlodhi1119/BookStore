@@ -2,6 +2,7 @@ package com.bookstore.config;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -29,6 +30,10 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
 
+    // read from application.properties (fallback to "*" if missing)
+    @Value("${bookstore.frontend.url:*}")
+    private String frontendUrl;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -44,7 +49,6 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-            // 🔥 THIS IS CRITICAL
             .cors(Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())
 
@@ -54,7 +58,6 @@ public class SecurityConfig {
 
             .authorizeHttpRequests(auth -> auth
 
-                // 🔥 MUST allow preflight
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                 // ---------- PUBLIC ----------
@@ -89,32 +92,42 @@ public class SecurityConfig {
 
             .headers(headers -> headers.frameOptions(frame -> frame.disable()));
 
-        // JWT AFTER CORS
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-     
+    /**
+     * Render / proxy safe CORS config.
+     *
+     * Important:
+     * - For JWT sent in Authorization header we do NOT need credentials (cookies).
+     * - Using addAllowedOriginPattern avoids exact-origin mismatch that can happen behind proxies.
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // 🔥 Render-safe
-        config.addAllowedOriginPattern("*");
+        // If frontendUrl is set to "*" in properties, or is empty, allow any origin.
+        // Otherwise allow the exact pattern provided (works with Render proxies).
+        if (frontendUrl != null && !frontendUrl.isBlank() && !"*".equals(frontendUrl.trim())) {
+            // allow the configured frontend (pattern style)
+            config.addAllowedOriginPattern(frontendUrl.trim());
+        } else {
+            // fallback (dev / missing config)
+            config.addAllowedOriginPattern("*");
+        }
 
-        config.setAllowedMethods(
-            List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
-        );
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
-        config.setExposedHeaders(List.of("Authorization"));
+        config.setExposedHeaders(List.of("Authorization")); // keep JWT header visible to browser
+        // IMPORTANT: wildcard origins only accepted by browsers when allowCredentials is false
+        // JWT is header-based, so disabling credentials is correct and safer here.
         config.setAllowCredentials(false);
         config.setMaxAge(3600L);
 
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
     }
-
 }
