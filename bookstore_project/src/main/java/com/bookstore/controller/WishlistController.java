@@ -9,15 +9,15 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/wishlist")
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 public class WishlistController {
 
 	private final WishlistService wishlistService;
 
-//	public WishlistController(WishlistService wishlistService) {
-//		super();
-//		this.wishlistService = wishlistService;
-//	}
+	public WishlistController(WishlistService wishlistService) {
+		super();
+		this.wishlistService = wishlistService;
+	}
 
 	@PostMapping("/add/{bookId}")
 	public Wishlist add(@PathVariable Long bookId) {

@@ -11,19 +11,19 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
 	private final OrderRepository orderRepo;
 	private final CartRepository cartRepo;
 	private final UserRepository userRepo;
 
-//	public OrderServiceImpl(OrderRepository orderRepo, CartRepository cartRepo, UserRepository userRepo) {
-//		super();
-//		this.orderRepo = orderRepo;
-//		this.cartRepo = cartRepo;
-//		this.userRepo = userRepo;
-//	}
+	public OrderServiceImpl(OrderRepository orderRepo, CartRepository cartRepo, UserRepository userRepo) {
+		super();
+		this.orderRepo = orderRepo;
+		this.cartRepo = cartRepo;
+		this.userRepo = userRepo;
+	}
 
 	private User currentUser() {
 		String email = SecurityContextHolder.getContext().getAuthentication().getName();

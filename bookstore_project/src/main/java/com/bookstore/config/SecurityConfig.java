@@ -25,12 +25,18 @@ import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
+    
 
-    // -------------------------
+    public SecurityConfig(JwtAuthenticationFilter jwtFilter) {
+		super();
+		this.jwtFilter = jwtFilter;
+	}
+
+	// -------------------------
     // PASSWORD ENCODER
     // -------------------------
     @Bean

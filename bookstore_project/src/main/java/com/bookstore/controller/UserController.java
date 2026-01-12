@@ -8,15 +8,15 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/users")
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 public class UserController {
 
 	private final UserService userService;
 
-//	public UserController(UserService userService) {
-//		super();
-//		this.userService = userService;
-//	}
+	public UserController(UserService userService) {
+		super();
+		this.userService = userService;
+	}
 
 	// GET /api/users/me
 	@GetMapping("/me")

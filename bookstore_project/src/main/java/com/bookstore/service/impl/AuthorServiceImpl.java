@@ -10,15 +10,15 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 public class AuthorServiceImpl implements AuthorService {
 
 	private final AuthorRepository authorRepository;
 
-//	public AuthorServiceImpl(AuthorRepository authorRepository) {
-//		super();
-//		this.authorRepository = authorRepository;
-//	}
+	public AuthorServiceImpl(AuthorRepository authorRepository) {
+		super();
+		this.authorRepository = authorRepository;
+	}
 
 	@Override
 	public Author createAuthor(String name) {

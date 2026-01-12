@@ -12,17 +12,17 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
 
 	private final PaymentRepository paymentRepo;
 	private final OrderRepository orderRepo;
 
-//	public PaymentServiceImpl(PaymentRepository paymentRepo, OrderRepository orderRepo) {
-//		super();
-//		this.paymentRepo = paymentRepo;
-//		this.orderRepo = orderRepo;
-//	}
+	public PaymentServiceImpl(PaymentRepository paymentRepo, OrderRepository orderRepo) {
+		super();
+		this.paymentRepo = paymentRepo;
+		this.orderRepo = orderRepo;
+	}
 
 	@Override
 	public Payment initiatePayment(Long orderId) {

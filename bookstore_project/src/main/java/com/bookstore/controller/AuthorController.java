@@ -13,17 +13,17 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/authors")
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 public class AuthorController {
 
     private final AuthorService authorService;
     
     
 
-//    public AuthorController(AuthorService authorService) {
-//		super();
-//		this.authorService = authorService;
-//	}
+    public AuthorController(AuthorService authorService) {
+		super();
+		this.authorService = authorService;
+	}
 
 
 

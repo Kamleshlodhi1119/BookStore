@@ -8,15 +8,15 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/cart")
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 public class CartController {
 
 	private final CartService cartService;
 
-//	public CartController(CartService cartService) {
-//		super();
-//		this.cartService = cartService;
-//	}
+	public CartController(CartService cartService) {
+		super();
+		this.cartService = cartService;
+	}
 
 	@PostMapping("/add")
 	public Cart add(@RequestBody CartItemDto dto) {

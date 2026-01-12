@@ -11,17 +11,17 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/users")
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 public class AdminUserController {
 
 	private final UserService userService;
 	private final AuthorService authorService;
 
-//	public AdminUserController(UserService userService, AuthorService authorService) {
-//		super();
-//		this.userService = userService;
-//		this.authorService = authorService;
-//	}
+	public AdminUserController(UserService userService, AuthorService authorService) {
+		super();
+		this.userService = userService;
+		this.authorService = authorService;
+	}
 
 	// GET /api/admin/users
 	@GetMapping

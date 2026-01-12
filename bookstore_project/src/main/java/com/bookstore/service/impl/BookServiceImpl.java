@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 public class BookServiceImpl implements BookService {
 
 	private final BookRepository bookRepository;
@@ -27,15 +27,15 @@ public class BookServiceImpl implements BookService {
 
 	private final ModelMapper modelMapper;
 
-//	public BookServiceImpl(BookRepository bookRepository, AuthorRepository authorRepository,
-//			RatingRepository ratingRepository, CartItemRepository cartItemRepository,ModelMapper modelMapper) {
-//		super();
-//		this.bookRepository = bookRepository;
-//		this.authorRepository = authorRepository;
-//		this.ratingRepository = ratingRepository;
-//		this.modelMapper = modelMapper;
-//		this.cartItemRepository=cartItemRepository;
-//	}
+	public BookServiceImpl(BookRepository bookRepository, AuthorRepository authorRepository,
+			RatingRepository ratingRepository, CartItemRepository cartItemRepository,ModelMapper modelMapper) {
+		super();
+		this.bookRepository = bookRepository;
+		this.authorRepository = authorRepository;
+		this.ratingRepository = ratingRepository;
+		this.modelMapper = modelMapper;
+		this.cartItemRepository=cartItemRepository;
+	}
 
 	
 	@Override

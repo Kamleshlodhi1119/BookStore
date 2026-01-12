@@ -9,15 +9,15 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/orders")
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 public class AdminOrderController {
 
 	private final OrderService orderService;
 
-//	public AdminOrderController(OrderService orderService) {
-//		super();
-//		this.orderService = orderService;
-//	}
+	public AdminOrderController(OrderService orderService) {
+		super();
+		this.orderService = orderService;
+	}
 
 	@GetMapping
 	public List<Order> allOrders() {

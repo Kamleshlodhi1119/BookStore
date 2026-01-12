@@ -15,19 +15,19 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 public class WishlistServiceImpl implements WishlistService {
 
 	private final WishlistRepository wishlistRepo;
 	private final BookRepository bookRepo;
 	private final UserRepository userRepo;
 
-//	public WishlistServiceImpl(WishlistRepository wishlistRepo, BookRepository bookRepo, UserRepository userRepo) {
-//		super();
-//		this.wishlistRepo = wishlistRepo;
-//		this.bookRepo = bookRepo;
-//		this.userRepo = userRepo;
-//	}
+	public WishlistServiceImpl(WishlistRepository wishlistRepo, BookRepository bookRepo, UserRepository userRepo) {
+		super();
+		this.wishlistRepo = wishlistRepo;
+		this.bookRepo = bookRepo;
+		this.userRepo = userRepo;
+	}
 
 	private User currentUser() {
 		String email = SecurityContextHolder.getContext().getAuthentication().getName();
