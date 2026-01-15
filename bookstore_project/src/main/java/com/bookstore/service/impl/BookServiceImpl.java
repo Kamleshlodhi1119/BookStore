@@ -16,8 +16,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+import org.springframework.transaction.annotation.Transactional; // 1. Add import
+
 @Service
-//@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class BookServiceImpl implements BookService {
 
 	private final BookRepository bookRepository;
@@ -127,27 +129,64 @@ public class BookServiceImpl implements BookService {
 
 		ratingRepository.save(r);
 	}
-
 	private BookDto map(Book book) {
 
-	    BookDto dto = modelMapper.map(book, BookDto.class);
+	    // ❌ ModelMapper hata diya (yahin error aa raha tha)
+	    // BookDto dto = modelMapper.map(book, BookDto.class);
 
+	    // ✅ Simple manual mapping
+	    BookDto dto = new BookDto();
+
+	    dto.setId(book.getId());
+	    dto.setIsbn(book.getIsbn());
+	    dto.setTitle(book.getTitle());
+	    dto.setDescription(book.getDescription());
+	    dto.setPrice(book.getPrice());
+	    dto.setStockQuantity(book.getStockQuantity());
+	    dto.setPublishDate(book.getPublishDate());
+	    dto.setActive(book.getActive());
+	    dto.setImageUrl(book.getImageUrl());
+
+	    // relation flatten (relation unchanged)
 	    if (book.getAuthor() != null) {
 	        dto.setAuthorName(book.getAuthor().getName());
 	    }
 
-	    dto.setImageUrl(book.getImageUrl()); // ✅ ADD THIS
+	    // derived field (no entity change)
+	    List<Rating> ratings = ratingRepository.findByBookId(book.getId());
 
-	    double avg = (book.getRatings() == null || book.getRatings().isEmpty())
-	        ? 0
-	        : book.getRatings().stream()
-	            .mapToInt(Rating::getRating)
-	            .average()
-	            .orElse(0);
+	    double avg = ratings.isEmpty()
+	            ? 0
+	            : ratings.stream()
+	                     .mapToInt(Rating::getRating)
+	                     .average()
+	                     .orElse(0);
 
 	    dto.setAverageRating(avg);
+
 	    return dto;
 	}
+
+//	private BookDto map(Book book) {
+//
+//	    BookDto dto = modelMapper.map(book, BookDto.class);
+//
+//	    if (book.getAuthor() != null) {
+//	        dto.setAuthorName(book.getAuthor().getName());
+//	    }
+//
+//	    dto.setImageUrl(book.getImageUrl()); // ✅ ADD THIS
+//
+//	    double avg = (book.getRatings() == null || book.getRatings().isEmpty())
+//	        ? 0
+//	        : book.getRatings().stream()
+//	            .mapToInt(Rating::getRating)
+//	            .average()
+//	            .orElse(0);
+//
+//	    dto.setAverageRating(avg);
+//	    return dto;
+//	}
 
 
 	@Override
