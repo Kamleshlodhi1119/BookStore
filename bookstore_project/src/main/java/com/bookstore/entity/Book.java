@@ -24,12 +24,15 @@ public class Book {
 	private Double price;
 	private Integer stockQuantity;
 
-	private LocalDate publishDate = LocalDate.of(1900, 1, 1);
+	@Column(columnDefinition = "DATE")
+	private LocalDate publishDate;
+
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "author_id")
+	@JoinColumn(name = "author_id", nullable = true)
 	@JsonIgnore
 	private Author author;
+
 	
 	
 
@@ -37,8 +40,12 @@ public class Book {
 //	private List<Rating> ratings = new ArrayList<>();
 	
 	// Inside Book.java
-	@OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+//	@OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+//	private List<Rating> ratings = new ArrayList<>();
+	
+	@OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
 	private List<Rating> ratings = new ArrayList<>();
+
 
 	// Add this calculated method so the average is always accurate
 	public Double getAverageRating() {

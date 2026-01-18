@@ -18,8 +18,19 @@ public class BookDto {
 	private String authorName;
 	private Double averageRating;
 	private boolean active;
+	private Long authorId;
+
 	
 	private String imageUrl;
+
+	
+	public Long getAuthorId() {
+	    return authorId;
+	}
+
+	public void setAuthorId(Long authorId) {
+	    this.authorId = authorId;
+	}
 
 	public Long getId() {
 		return id;
