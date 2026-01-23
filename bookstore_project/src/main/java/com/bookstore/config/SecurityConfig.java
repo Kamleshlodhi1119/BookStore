@@ -87,6 +87,7 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/swagger-ui.html"
                 ).permitAll()
+                .requestMatchers("/images/**").permitAll()
 
                 // ---------- USER / ADMIN ----------
                 .requestMatchers(
@@ -95,7 +96,8 @@ public class SecurityConfig {
                     "/api/orders/**",
                     "/api/ratings/**",
                     "/api/payments/**",
-                    "/api/users/me/**"
+                    "/api/users/me/**",
+                    "/api/admin/users/getall/**"
                 ).hasAnyRole("USER", "ADMIN")
 
                 // ---------- ADMIN ONLY ----------
@@ -114,25 +116,61 @@ public class SecurityConfig {
     // -------------------------
     // GLOBAL CORS CONFIG
     // -------------------------
+//    @Bean
+//    public CorsConfigurationSource corsConfigurationSource() {
+//
+//        CorsConfiguration config = new CorsConfiguration();
+//
+//        // ✅ ONLY Render UI allowed
+//        config.addAllowedOrigin("https://book-store-ui-xuao.onrender.com");
+//
+//        // (optional dev support)
+//        // config.addAllowedOrigin("http://localhost:4200");
+//
+//        config.setAllowedMethods(
+//            List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
+//        );
+//
+//        config.setAllowedHeaders(List.of("*"));
+//        config.setExposedHeaders(List.of("Authorization"));
+//
+//        // 🔥 JWT header auth → cookies not needed
+//        config.setAllowCredentials(false);
+//
+//        UrlBasedCorsConfigurationSource source =
+//                new UrlBasedCorsConfigurationSource();
+//        source.registerCorsConfiguration("/**", config);
+//
+//        return source;
+//    }
+    
+    
+    
+    
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
         CorsConfiguration config = new CorsConfiguration();
 
-        // ✅ ONLY Render UI allowed
-        config.addAllowedOrigin("https://book-store-ui-xuao.onrender.com");
+        // ✅ ALLOWED ORIGINS
+        config.setAllowedOrigins(List.of(
+                "http://localhost:4200",
+                "https://books-storeapp.netlify.app",
+                "https://book-store-ui-xuao.onrender.com"
+        ));
 
-        // (optional dev support)
-        // config.addAllowedOrigin("http://localhost:4200");
-
+        // ✅ ALLOWED METHODS
         config.setAllowedMethods(
-            List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
+                List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
         );
 
+        // ✅ ALLOWED HEADERS
         config.setAllowedHeaders(List.of("*"));
+
+        // ✅ EXPOSE JWT HEADER
         config.setExposedHeaders(List.of("Authorization"));
 
-        // 🔥 JWT header auth → cookies not needed
+        // 🔥 JWT in header → NO cookies
         config.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource source =
@@ -141,4 +179,5 @@ public class SecurityConfig {
 
         return source;
     }
+
 }

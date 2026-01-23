@@ -24,7 +24,7 @@ public class AdminUserController {
 	}
 
 	// GET /api/admin/users
-	@GetMapping
+	@GetMapping("/getall")
 	public List<User> getAllUsers() {
 		return userService.getAllUsers();
 	}
