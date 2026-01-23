@@ -91,20 +91,20 @@ public class BookController {
 	
 	
 	
-	@GetMapping(
-	        value = "/{id}/image",
-	        produces = org.springframework.http.MediaType.IMAGE_PNG_VALUE
-	)
-	public byte[] getBookImage(@PathVariable Long id) throws IOException {
-
-	    Path imagePath = Paths.get("uploads/books", id + ".png");
-
-	    if (!Files.exists(imagePath)) {
-	        throw new ResourceNotFoundException("Image not found");
-	    }
-
-	    return Files.readAllBytes(imagePath);
-	}
+//	@GetMapping(
+//	        value = "/{id}/image",
+//	        produces = org.springframework.http.MediaType.IMAGE_PNG_VALUE
+//	)
+//	public byte[] getBookImage(@PathVariable Long id) throws IOException {
+//
+//	    Path imagePath = Paths.get("uploads/books", id + ".png");
+//
+//	    if (!Files.exists(imagePath)) {
+//	        throw new ResourceNotFoundException("Image not found");
+//	    }
+//
+//	    return Files.readAllBytes(imagePath);
+//	}
 
 	
 	@GetMapping("/filter")
