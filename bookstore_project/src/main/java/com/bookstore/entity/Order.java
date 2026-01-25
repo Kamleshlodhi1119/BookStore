@@ -60,4 +60,10 @@ public class Order {
 	public void setTotalAmount(double totalAmount) {
 		this.totalAmount = totalAmount;
 	}
+	
+	
+	public Instant getCreatedAt() {
+	    return createdAt;
+	}
+
 }

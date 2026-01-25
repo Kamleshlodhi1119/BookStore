@@ -3,7 +3,9 @@ package com.bookstore.dto;
 import java.util.List;
 
 public class CartResponseDto {
+    private Long id;
     private List<CartItemResponseDto> items;
+    
     private double totalAmount;
 	public List<CartItemResponseDto> getItems() {
 		return items;

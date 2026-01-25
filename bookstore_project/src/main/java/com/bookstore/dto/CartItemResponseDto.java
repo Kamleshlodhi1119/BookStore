@@ -5,6 +5,7 @@ public class CartItemResponseDto {
     private String title;
     private double price;
     private int quantity;
+    private String imageUrl;
 	public Long getBookId() {
 		return bookId;
 	}
@@ -29,6 +30,12 @@ public class CartItemResponseDto {
 	public void setQuantity(int quantity) {
 		this.quantity = quantity;
 	}
-
-    // getters & setters
+	public String getImageUrl() {
+		return imageUrl;
+	}
+	public void setImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
+	}
+    
+    
 }

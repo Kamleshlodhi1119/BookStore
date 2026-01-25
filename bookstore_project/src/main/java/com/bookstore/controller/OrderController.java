@@ -1,5 +1,6 @@
 package com.bookstore.controller;
 
+import com.bookstore.dto.OrderResponseDto;
 import com.bookstore.entity.Order;
 import com.bookstore.service.OrderService;
 import lombok.RequiredArgsConstructor;
@@ -25,9 +26,10 @@ public class OrderController {
 	}
 
 	@GetMapping("/my")
-	public List<Order> myOrders() {
-		return orderService.getMyOrders();
+	public List<OrderResponseDto> myOrders() {
+	    return orderService.getMyOrders();
 	}
+
 
 	@GetMapping("/{id}")
 	public Order view(@PathVariable Long id) {

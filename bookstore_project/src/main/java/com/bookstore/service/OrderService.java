@@ -1,18 +1,18 @@
 package com.bookstore.service;
 
+import com.bookstore.dto.OrderResponseDto;
 import com.bookstore.entity.Order;
-
 import java.util.List;
 
 public interface OrderService {
 
-	Order placeOrder();
+    Order placeOrder();
 
-	List<Order> getMyOrders();
+    List<OrderResponseDto> getMyOrders();
 
-	Order getOrderById(Long orderId);
+    Order getOrderById(Long orderId);
 
-	List<Order> getAllOrders();
+    List<Order> getAllOrders();
 
-	void updateOrderStatus(Long orderId, String status);
+    void updateOrderStatus(Long orderId, String status);
 }

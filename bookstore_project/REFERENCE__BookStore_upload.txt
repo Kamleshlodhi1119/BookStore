@@ -1,898 +1,1828 @@
-package BookStore;
+first listen this is imple classes 
+package com.bookstore.service.impl;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-@SpringBootApplication
-public class BookStoreApplication {
-
-	public static void main(String[] args) {
-		SpringApplication.run(BookStoreApplication.class, args);
-	}
-
-}
-
-package com.BookStore.controller;
-
-import com.BookStore.dto.BookDto;
-import com.BookStore.service.BookService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-
-@RestController
-@RequestMapping("/books")
-public class BookController {
-
-    @Autowired
-    private BookService bookService;
-
-    @PostMapping("/")
-    public BookDto create(@RequestBody BookDto dto) {
-        return bookService.createBook(dto);
-    }
-
-    @GetMapping("/")
-    public List<BookDto> getAll() {
-        return bookService.getAllBooks();
-    }
-
-    @GetMapping("/{id}")
-    public BookDto get(@PathVariable int id) {
-        return bookService.getBook(id);
-    }
-
-    @PutMapping("/{id}")
-    public BookDto update(@PathVariable int id, @RequestBody BookDto dto) {
-        return bookService.updateBook(id, dto);
-    }
-
-    @DeleteMapping("/{id}")
-    public String delete(@PathVariable int id) {
-        bookService.deleteBook(id);
-        return "Book deleted";
-    }
-}
-
-package com.BookStore.controller;
-
-import com.BookStore.dto.LoginRequest;
-import com.BookStore.dto.RegisterRequest;
-import com.BookStore.security.JwtTokenProvider;
-import com.BookStore.service.UserService;
+import com.bookstore.entity.Author;
+import com.bookstore.exception.ResourceNotFoundException;
+import com.bookstore.repository.AuthorRepository;
+import com.bookstore.service.AuthorService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.stereotype.Service;
 
-@RestController
-@RequestMapping("/api/auth")
-@RequiredArgsConstructor
-public class AuthController {
-
-    private final AuthenticationManager authenticationManager;
-    private final JwtTokenProvider jwtTokenProvider;
-    private final UserService userService;
-
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
-        return ResponseEntity.ok(userService.register(request));
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-
-        Authentication authentication = authenticationManager.authenticate(
-              new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
-
-        String token = jwtTokenProvider.generateToken(authentication);
-
-        return ResponseEntity.ok(token);
-    }
-}
-
-package com.BookStore.config;
-
-import com.BookStore.security.JwtAuthenticationFilter;
-import com.BookStore.security.CustomUserDetailsService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
-@Configuration
-public class SecurityConfig {
-
-    @Autowired
-    private JwtAuthenticationFilter jwtFilter;
-
-    @Autowired
-    private CustomUserDetailsService userDetailsService;
-
-    @Bean
-    public PasswordEncoder encoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public AuthenticationManager authManager(AuthenticationConfiguration config)
-            throws Exception {
-        return config.getAuthenticationManager();
-    }
-
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-
-        http.csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll()   // login + register allowed
-                        .anyRequest().authenticated()               // all CRUD needs login
-                )
-                .sessionManagement(sm ->
-                        sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                );
-
-        http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
-
-        return http.build();
-    }
-}
-package com.BookStore.config;
-
-import org.modelmapper.ModelMapper;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
-@Configuration
-public class ModelMapperConfig {
-
-    @Bean
-    public ModelMapper modelMapper() {
-        return new ModelMapper();
-    }
-}
-
-package com.BookStore.dto;
-
-import lombok.Data;
-
-@Data
-public class UserDto {
-    private int user_id;
-    private String username;
-    private String email;
-}
-
-package com.BookStore.dto;
-
-import lombok.Data;
-
-@Data
-public class RegisterRequest {
-
-    private String username;
-    private String email;
-    private String password;
-}
-
-package com.BookStore.dto;
-
-import lombok.Data;
-
-@Data
-public class RatingDto {
-
-    private int rating_id;
-    private int book_id;
-    private int user_id;
-    private int rating_value;
-    private String review_text;
-    private String created_at;
-}
-package com.BookStore.dto;
-
-import lombok.Data;
 import java.util.List;
 
-@Data
-public class PublisherDto {
+@Service
+//@RequiredArgsConstructor
+public class AuthorServiceImpl implements AuthorService {
 
-    private int publisher_id;
-    private String name;
-    private String address;
-    private String contact_email;
-    private String contact_phone;
-    private String website_url;
-    private List<BookDto> books_published;
-}
-package com.BookStore.dto;
+	private final AuthorRepository authorRepository;
 
-import lombok.Data;
-
-@Data
-public class OrderItemDto {
-    private BookDto book;
-    private int quantity;
-    private float price;
-}
-package com.BookStore.dto;
-
-import lombok.Data;
-import java.util.List;
-
-@Data
-public class OrderDto {
-    private int order_id;
-    private int user_id;
-    private List<OrderItemDto> order_items;
-    private float total_price;
-    private String order_status;
-    private String order_date;
-    private String shipping_address;
-    private String payment_method;
-    private CheckoutDto checkout;
-}
-package com.BookStore.dto;
-
-import lombok.Data;
-
-@Data
-public class LoginRequest {
-    private String email;
-    private String password;
-}
-package com.BookStore.dto;
-
-import lombok.Data;
-
-@Data
-public class CheckoutDto {
-    private int checkout_id;
-    private int order_id;
-    private String payment_status;
-    private String payment_date;
-    private String transaction_id;
-    private String payment_method;
-}
-package com.BookStore.dto;
-
-import lombok.Data;
-
-@Data
-public class CartItemDto {
-    private BookDto book;
-    private int quantity;
-}
-package com.BookStore.dto;
-
-import lombok.Data;
-import java.util.List;
-
-@Data
-public class CartDto {
-    private int cart_id;
-    private int user_id;
-    private List<CartItemDto> books;
-    private String created_at;
-    private String updated_at;
-}
-package com.BookStore.dto;
-
-import lombok.Data;
-import java.util.List;
-
-@Data
-public class BookDto {
-
-    private int book_id;
-    private String isbn;
-    private String title;
-    private List<AuthorDto> authors;
-    private PublisherDto publisher;
-    private String publication_date;
-    private List<String> genres;
-    private String language;
-    private String description;
-    private String format;
-    private int page_count;
-    private String edition;
-    private float price;
-    private String currency;
-    private int stock_quantity;
-    private String availability_status;
-    private String sku;
-    private int reorder_level;
-    private String created_at;
-    private String updated_at;
-    private boolean is_active;
-    private String shelf_location;
-    private float average_rating;
-    private int reviews_count;
-    private String cover_image_url;
-    private float weight_grams;
-	public int getBook_id() {
-		return book_id;
-	}
-	public void setBook_id(int book_id) {
-		this.book_id = book_id;
-	}
-	public String getIsbn() {
-		return isbn;
-	}
-	public void setIsbn(String isbn) {
-		this.isbn = isbn;
-	}
-	public String getTitle() {
-		return title;
-	}
-	public void setTitle(String title) {
-		this.title = title;
-	}
-	public List<AuthorDto> getAuthors() {
-		return authors;
-	}
-	public void setAuthors(List<AuthorDto> authors) {
-		this.authors = authors;
-	}
-	public PublisherDto getPublisher() {
-		return publisher;
-	}
-	public void setPublisher(PublisherDto publisher) {
-		this.publisher = publisher;
-	}
-	public String getPublication_date() {
-		return publication_date;
-	}
-	public void setPublication_date(String publication_date) {
-		this.publication_date = publication_date;
-	}
-	public List<String> getGenres() {
-		return genres;
-	}
-	public void setGenres(List<String> genres) {
-		this.genres = genres;
-	}
-	public String getLanguage() {
-		return language;
-	}
-	public void setLanguage(String language) {
-		this.language = language;
-	}
-	public String getDescription() {
-		return description;
-	}
-	public void setDescription(String description) {
-		this.description = description;
-	}
-	public String getFormat() {
-		return format;
-	}
-	public void setFormat(String format) {
-		this.format = format;
-	}
-	public int getPage_count() {
-		return page_count;
-	}
-	public void setPage_count(int page_count) {
-		this.page_count = page_count;
-	}
-	public String getEdition() {
-		return edition;
-	}
-	public void setEdition(String edition) {
-		this.edition = edition;
-	}
-	public float getPrice() {
-		return price;
-	}
-	public void setPrice(float price) {
-		this.price = price;
-	}
-	public String getCurrency() {
-		return currency;
-	}
-	public void setCurrency(String currency) {
-		this.currency = currency;
-	}
-	public int getStock_quantity() {
-		return stock_quantity;
-	}
-	public void setStock_quantity(int stock_quantity) {
-		this.stock_quantity = stock_quantity;
-	}
-	public String getAvailability_status() {
-		return availability_status;
-	}
-	public void setAvailability_status(String availability_status) {
-		this.availability_status = availability_status;
-	}
-	public String getSku() {
-		return sku;
-	}
-	public void setSku(String sku) {
-		this.sku = sku;
-	}
-	public int getReorder_level() {
-		return reorder_level;
-	}
-	public void setReorder_level(int reorder_level) {
-		this.reorder_level = reorder_level;
-	}
-	public String getCreated_at() {
-		return created_at;
-	}
-	public void setCreated_at(String created_at) {
-		this.created_at = created_at;
-	}
-	public String getUpdated_at() {
-		return updated_at;
-	}
-	public void setUpdated_at(String updated_at) {
-		this.updated_at = updated_at;
-	}
-	public boolean isIs_active() {
-		return is_active;
-	}
-	public void setIs_active(boolean is_active) {
-		this.is_active = is_active;
-	}
-	public String getShelf_location() {
-		return shelf_location;
-	}
-	public void setShelf_location(String shelf_location) {
-		this.shelf_location = shelf_location;
-	}
-	public float getAverage_rating() {
-		return average_rating;
-	}
-	public void setAverage_rating(float average_rating) {
-		this.average_rating = average_rating;
-	}
-	public int getReviews_count() {
-		return reviews_count;
-	}
-	public void setReviews_count(int reviews_count) {
-		this.reviews_count = reviews_count;
-	}
-	public String getCover_image_url() {
-		return cover_image_url;
-	}
-	public void setCover_image_url(String cover_image_url) {
-		this.cover_image_url = cover_image_url;
-	}
-	public float getWeight_grams() {
-		return weight_grams;
-	}
-	public void setWeight_grams(float weight_grams) {
-		this.weight_grams = weight_grams;
-	}
-	public BookDto(int book_id, String isbn, String title, List<AuthorDto> authors, PublisherDto publisher,
-			String publication_date, List<String> genres, String language, String description, String format,
-			int page_count, String edition, float price, String currency, int stock_quantity,
-			String availability_status, String sku, int reorder_level, String created_at, String updated_at,
-			boolean is_active, String shelf_location, float average_rating, int reviews_count, String cover_image_url,
-			float weight_grams) {
+	public AuthorServiceImpl(AuthorRepository authorRepository) {
 		super();
-		this.book_id = book_id;
-		this.isbn = isbn;
-		this.title = title;
-		this.authors = authors;
-		this.publisher = publisher;
-		this.publication_date = publication_date;
-		this.genres = genres;
-		this.language = language;
-		this.description = description;
-		this.format = format;
-		this.page_count = page_count;
-		this.edition = edition;
-		this.price = price;
-		this.currency = currency;
-		this.stock_quantity = stock_quantity;
-		this.availability_status = availability_status;
-		this.sku = sku;
-		this.reorder_level = reorder_level;
-		this.created_at = created_at;
-		this.updated_at = updated_at;
-		this.is_active = is_active;
-		this.shelf_location = shelf_location;
-		this.average_rating = average_rating;
-		this.reviews_count = reviews_count;
-		this.cover_image_url = cover_image_url;
-		this.weight_grams = weight_grams;
+		this.authorRepository = authorRepository;
 	}
-    
-    
-    
-    
-    
-    
-}
-package com.BookStore.dto;
 
-import lombok.Data;
+	@Override
+	public Author createAuthor(String name) {
+		Author author = new Author();
+		author.setName(name);
+		return authorRepository.save(author);
+	}
+
+	@Override
+	public Author updateAuthor(Long id, String name) {
+		Author author = getAuthorById(id);
+		author.setName(name);
+		return authorRepository.save(author);
+	}
+
+	@Override
+	public List<Author> getAllAuthors() {
+		return authorRepository.findAll();
+	}
+
+	@Override
+	public Author getAuthorById(Long id) {
+		return authorRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Author not found"));
+	}
+
+	@Override
+	public void deleteAuthor(Long id) {
+		if (!authorRepository.existsById(id)) {
+			throw new ResourceNotFoundException("Author not found");
+		}
+		authorRepository.deleteById(id);
+	}
+}
+
+package com.bookstore.service.impl;
+
+import com.bookstore.dto.BookDto;
+import com.bookstore.entity.Author;
+import com.bookstore.entity.Book;
+import com.bookstore.entity.Rating;
+import com.bookstore.exception.ResourceNotFoundException;
+import com.bookstore.repository.AuthorRepository;
+import com.bookstore.repository.BookRepository;
+import com.bookstore.repository.CartItemRepository;
+import com.bookstore.repository.RatingRepository;
+import com.bookstore.service.BookService;
+import org.modelmapper.ModelMapper;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
 import java.util.List;
 
-@Data
-public class AuthorDto {
-    private int author_id;
-    private String name;
-    private String biography;
-    private String date_of_birth;
-    private String nationality;
-    private List<BookDto> books;
-}
+@Service
+@Transactional(readOnly = true)
+public class BookServiceImpl implements BookService {
 
-package com.BookStore.entity;
+    private final BookRepository bookRepository;
+    private final AuthorRepository authorRepository;
+    private final RatingRepository ratingRepository;
+    private final CartItemRepository cartItemRepository;
+    private final ModelMapper modelMapper;
 
-import jakarta.persistence.*;
-import lombok.*;
-import java.time.Instant;
-import java.util.*;
+    // SINGLE CONSTRUCTOR — no Lombok, no conflicts
+    public BookServiceImpl(BookRepository bookRepository,
+                           AuthorRepository authorRepository,
+                           RatingRepository ratingRepository,
+                           CartItemRepository cartItemRepository,
+                           ModelMapper modelMapper) {
 
-@Entity
-@Table(name = "users")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class User {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long userId;
-
-    @Column(unique = true)
-    private String username;
-    @Column(unique = true)
-    private String email;
-    private String passwordHash;
-    private Instant createdAt;
-    private Instant updatedAt;
-
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "user_roles")
-    @Column(name = "role")
-    private Set<String> roles = new HashSet<>();
-
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Cart cart;
-
-    @OneToMany(mappedBy = "user")
-    private Set<Order> orders = new HashSet<>();
-
-    @PrePersist
-    public void prePersist() {
-        createdAt = Instant.now();
-        updatedAt = createdAt;
+        this.bookRepository = bookRepository;
+        this.authorRepository = authorRepository;
+        this.ratingRepository = ratingRepository;
+        this.cartItemRepository = cartItemRepository;
+        this.modelMapper = modelMapper;
     }
-    @PreUpdate
-    public void preUpdate() {
-        updatedAt = Instant.now();
+
+    // ---------------- CREATE ----------------
+
+    @Override
+    @Transactional
+    public BookDto createBook(BookDto dto) {
+
+        // ---- VALIDATION ----
+        if (dto.getAuthorName() == null || dto.getAuthorName().isBlank()) {
+            throw new IllegalArgumentException("authorName is required");
+        }
+
+        // ---- MAP BASIC FIELDS ----
+        Book book = modelMapper.map(dto, Book.class);
+
+        // Hibernate safety
+        if (book.getRatings() == null) {
+            book.setRatings(new ArrayList<>());
+        }
+
+        // ---- FIND OR CREATE AUTHOR ----
+        Author author = authorRepository.findByName(dto.getAuthorName())
+                .orElseGet(() -> {
+                    Author a = new Author();
+                    a.setName(dto.getAuthorName());
+                    return authorRepository.save(a);
+                });
+
+        book.setAuthor(author);
+
+        // ---- FIRST SAVE (ID GENERATED) ----
+        Book saved = bookRepository.save(book);
+
+        // ---- AUTO IMAGE URL ----
+        if (saved.getImageUrl() == null || saved.getImageUrl().isBlank()) {
+            saved.setImageUrl("images/books/" + saved.getId() + ".png");
+            saved = bookRepository.save(saved);
+        }
+
+        return map(saved);
     }
-	public Long getUserId() {
-		return userId;
-	}
-	public void setUserId(Long userId) {
-		this.userId = userId;
-	}
-	public String getUsername() {
-		return username;
-	}
-	public void setUsername(String username) {
-		this.username = username;
-	}
-	public String getEmail() {
-		return email;
-	}
-	public void setEmail(String email) {
-		this.email = email;
-	}
-	public String getPasswordHash() {
-		return passwordHash;
-	}
-	public void setPasswordHash(String passwordHash) {
-		this.passwordHash = passwordHash;
-	}
-	public Instant getCreatedAt() {
-		return createdAt;
-	}
-	public void setCreatedAt(Instant createdAt) {
-		this.createdAt = createdAt;
-	}
-	public Instant getUpdatedAt() {
-		return updatedAt;
-	}
-	public void setUpdatedAt(Instant updatedAt) {
-		this.updatedAt = updatedAt;
-	}
-	public Set<String> getRoles() {
-		return roles;
-	}
-	public void setRoles(Set<String> roles) {
-		this.roles = roles;
-	}
-	public Cart getCart() {
-		return cart;
-	}
-	public void setCart(Cart cart) {
-		this.cart = cart;
-	}
-	public Set<Order> getOrders() {
-		return orders;
-	}
-	public void setOrders(Set<Order> orders) {
-		this.orders = orders;
-	}
-    
-    
-    
-    
+
+    // ---------------- UPDATE ----------------
+
+    @Override
+    @Transactional
+    public BookDto updateBook(Long id, BookDto dto) {
+
+        Book book = bookRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found"));
+
+        book.setTitle(dto.getTitle());
+        book.setDescription(dto.getDescription());
+        book.setPrice(dto.getPrice());
+        book.setStockQuantity(dto.getStockQuantity());
+        book.setPublishDate(dto.getPublishDate());
+
+        if (dto.getImageUrl() != null && !dto.getImageUrl().isBlank()) {
+            book.setImageUrl(dto.getImageUrl());
+        }
+
+        // Optional author update
+        if (dto.getAuthorName() != null && !dto.getAuthorName().isBlank()) {
+
+            Author author = authorRepository.findByName(dto.getAuthorName())
+                    .orElseGet(() -> {
+                        Author a = new Author();
+                        a.setName(dto.getAuthorName());
+                        return authorRepository.save(a);
+                    });
+
+            book.setAuthor(author);
+        }
+
+        return map(bookRepository.save(book));
+    }
+
+    // ---------------- READ ----------------
+
+    @Override
+    public BookDto getBookById(Long id) {
+        return map(
+                bookRepository.findById(id)
+                        .orElseThrow(() -> new ResourceNotFoundException("Book not found"))
+        );
+    }
+
+    @Override
+    public List<BookDto> getAllBooksByAdmin() {
+        return bookRepository.findAll().stream()
+                .map(this::map)
+                .toList();
+    }
+
+    @Override
+    public List<BookDto> getAllBooks() {
+        return bookRepository.findAll().stream()
+                .filter(Book::getActive)
+                .map(this::map)
+                .toList();
+    }
+
+    // ---------------- DELETE ----------------
+
+    @Override
+    @Transactional
+    public void deleteBook(Long id) {
+        // Enable if FK constraint exists
+        // cartItemRepository.deleteByBookId(id);
+        bookRepository.deleteById(id);
+    }
+
+    // ---------------- RATINGS ----------------
+
+    @Override
+    @Transactional
+    public void addRating(Long bookId, Integer rating, String comment, String username) {
+
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found"));
+
+        Rating r = new Rating();
+        r.setRating(rating);
+        r.setComment(comment);
+        r.setUsername(username);
+        r.setBook(book);
+
+        ratingRepository.save(r);
+    }
+
+    // ---------------- SEARCH / FILTER ----------------
+
+    @Override
+    public List<BookDto> searchBooks(String keyword) {
+        return bookRepository
+                .findByTitleContainingIgnoreCaseAndActiveTrue(keyword)
+                .stream()
+                .map(this::map)
+                .toList();
+    }
+
+    @Override
+    public List<BookDto> getBooksByAuthor(Long authorId) {
+        return bookRepository
+                .findByAuthor_IdAndActiveTrue(authorId)
+                .stream()
+                .map(this::map)
+                .toList();
+    }
+
+    @Override
+    public List<BookDto> getLatestBooks() {
+        return bookRepository
+                .findTop5ByActiveTrueOrderByCreatedAtDesc()
+                .stream()
+                .map(this::map)
+                .toList();
+    }
+
+    @Override
+    public List<BookDto> getTopRatedBooks() {
+        return bookRepository.findByActiveTrue().stream()
+                .sorted((a, b) -> {
+                    double ar = a.getRatings() == null ? 0 :
+                            a.getRatings().stream()
+                                    .mapToInt(Rating::getRating)
+                                    .average()
+                                    .orElse(0);
+
+                    double br = b.getRatings() == null ? 0 :
+                            b.getRatings().stream()
+                                    .mapToInt(Rating::getRating)
+                                    .average()
+                                    .orElse(0);
+
+                    return Double.compare(br, ar);
+                })
+                .limit(5)
+                .map(this::map)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void updateBookStatus(Long bookId, boolean active) {
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found"));
+        book.setActive(active);
+        bookRepository.save(book);
+    }
+
+    @Override
+    public List<BookDto> filterBooks(String name, String author, Double maxPrice) {
+
+        return bookRepository.findAll().stream()
+                .filter(Book::getActive)
+                .filter(b ->
+                        name == null || name.isBlank()
+                                || b.getTitle().toLowerCase().contains(name.toLowerCase())
+                )
+                .filter(b ->
+                        author == null || author.isBlank()
+                                || (b.getAuthor() != null
+                                && b.getAuthor().getName().equalsIgnoreCase(author))
+                )
+                .filter(b ->
+                        maxPrice == null || b.getPrice() <= maxPrice
+                )
+                .map(this::map)
+                .toList();
+    }
+
+    // ---------------- MAPPER ----------------
+
+    private BookDto map(Book book) {
+
+        BookDto dto = new BookDto();
+
+        dto.setId(book.getId());
+        dto.setIsbn(book.getIsbn());
+        dto.setTitle(book.getTitle());
+        dto.setDescription(book.getDescription());
+        dto.setPrice(book.getPrice());
+        dto.setStockQuantity(book.getStockQuantity());
+        dto.setPublishDate(book.getPublishDate());
+        dto.setActive(book.getActive());
+        dto.setImageUrl(book.getImageUrl());
+
+        if (book.getAuthor() != null) {
+            dto.setAuthorName(book.getAuthor().getName());
+            dto.setAuthorId(book.getAuthor().getId());
+        }
+
+        List<Rating> ratings = ratingRepository.findByBookId(book.getId());
+
+        double avg = ratings.isEmpty()
+                ? 0
+                : ratings.stream()
+                        .mapToInt(Rating::getRating)
+                        .average()
+                        .orElse(0);
+
+        dto.setAverageRating(avg);
+
+        return dto;
+    }
+}package com.bookstore.service.impl;
+
+import com.bookstore.dto.CartItemDto;
+import com.bookstore.dto.CartItemResponseDto;
+import com.bookstore.dto.CartResponseDto;
+import com.bookstore.entity.*;
+import com.bookstore.exception.ResourceNotFoundException;
+import com.bookstore.repository.*;
+import com.bookstore.service.CartService;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@Transactional
+public class CartServiceImpl implements CartService {
+
+    private final CartRepository cartRepo;
+    private final BookRepository bookRepo;
+    private final UserRepository userRepo;
+
+    public CartServiceImpl(
+            CartRepository cartRepo,
+            BookRepository bookRepo,
+            UserRepository userRepo) {
+
+        this.cartRepo = cartRepo;
+        this.bookRepo = bookRepo;
+        this.userRepo = userRepo;
+    }
+
+    private User currentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new RuntimeException("Unauthorized");
+        }
+
+        return userRepo.findByEmail(auth.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    private Cart getOrCreateCart(User user) {
+        return cartRepo.findByUser(user).orElseGet(() -> {
+            Cart c = new Cart();
+            c.setUser(user);
+            return cartRepo.save(c);
+        });
+    }
+
+    // ---------- READ (DTO ONLY) ----------
+
+    @Override
+    @Transactional(readOnly = true)
+    public CartResponseDto getMyCart() {
+
+        Cart cart = cartRepo.findByUserWithItems(currentUser())
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
+
+        double total = 0;
+
+        List<CartItemResponseDto> items = cart.getItems().stream().map(ci -> {
+            CartItemResponseDto dto = new CartItemResponseDto();
+            dto.setBookId(ci.getBook().getId());
+            dto.setTitle(ci.getBook().getTitle());
+            dto.setPrice(ci.getBook().getPrice());
+            dto.setQuantity(ci.getQuantity());
+            dto.setImageUrl(ci.getBook().getImageUrl());
+
+            return dto;
+        }).toList();
+
+        for (CartItem ci : cart.getItems()) {
+            total += ci.getBook().getPrice() * ci.getQuantity();
+        }
+
+        CartResponseDto response = new CartResponseDto();
+        response.setItems(items);
+        response.setTotalAmount(total);
+
+        return response;
+    }
+
+    // ---------- WRITE OPERATIONS ----------
+
+    @Override
+    public void addToCart(CartItemDto dto) {
+
+        User user = currentUser();
+        Cart cart = getOrCreateCart(user);
+
+        Book book = bookRepo.findById(dto.getBookId())
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found"));
+
+        for (CartItem item : cart.getItems()) {
+            if (item.getBook().getId().equals(book.getId())) {
+                item.setQuantity(item.getQuantity() + dto.getQuantity());
+                return;
+            }
+        }
+
+        CartItem item = new CartItem();
+        item.setBook(book);
+        item.setQuantity(dto.getQuantity());
+        item.setCart(cart);
+        cart.getItems().add(item);
+    }
+
+    @Override
+    public void updateQuantity(CartItemDto dto) {
+
+        Cart cart = getOrCreateCart(currentUser());
+
+        cart.getItems().forEach(item -> {
+            if (item.getBook().getId().equals(dto.getBookId())) {
+                item.setQuantity(dto.getQuantity());
+            }
+        });
+    }
+
+    @Override
+    public void removeItem(Long bookId) {
+        Cart cart = getOrCreateCart(currentUser());
+        cart.getItems().removeIf(i -> i.getBook().getId().equals(bookId));
+    }
+
+    @Override
+    public void clearCart() {
+        Cart cart = getOrCreateCart(currentUser());
+        cart.getItems().clear();
+    }
 }
-package com.BookStore.entity;
+package com.bookstore.service.impl;
+
+import com.bookstore.entity.*;
+import com.bookstore.exception.ResourceNotFoundException;
+import com.bookstore.repository.CartRepository;
+import com.bookstore.repository.OrderRepository;
+import com.bookstore.repository.UserRepository;
+import com.bookstore.service.OrderService;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@Transactional
+public class OrderServiceImpl implements OrderService {
+
+    private final OrderRepository orderRepo;
+    private final CartRepository cartRepo;
+    private final UserRepository userRepo;
+
+    public OrderServiceImpl(
+            OrderRepository orderRepo,
+            CartRepository cartRepo,
+            UserRepository userRepo) {
+
+        this.orderRepo = orderRepo;
+        this.cartRepo = cartRepo;
+        this.userRepo = userRepo;
+    }
+
+    private User currentUser() {
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+
+        return userRepo.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    // ---------------- PLACE ORDER ----------------
+
+    @Override
+    public Order placeOrder() {
+
+        User user = currentUser();
+
+        Cart cart = cartRepo.findByUserWithItems(user)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
+
+        if (cart.getItems().isEmpty()) {
+            throw new IllegalStateException("Cart is empty");
+        }
+
+        Order order = new Order();
+        order.setUser(user);
+        order.setStatus("PLACED");
+
+        double total = 0;
+
+        for (CartItem ci : cart.getItems()) {
+            OrderItem oi = new OrderItem();
+            oi.setOrder(order);
+            oi.setBook(ci.getBook());
+            oi.setQuantity(ci.getQuantity());
+            oi.setPriceAtPurchase(ci.getBook().getPrice());
+
+            order.getItems().add(oi);
+            total += ci.getBook().getPrice() * ci.getQuantity();
+        }
+
+        order.setTotalAmount(total);
+
+        Order savedOrder = orderRepo.save(order);
+
+        // clear cart
+        cart.getItems().clear();
+
+        return savedOrder;
+    }
+
+    // ---------------- MY ORDERS ----------------
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Order> getMyOrders() {
+        return orderRepo.findByUserWithItems(currentUser());
+    }
+
+    // ---------------- SINGLE ORDER ----------------
+
+    @Override
+    @Transactional(readOnly = true)
+    public Order getOrderById(Long orderId) {
+
+        Order order = orderRepo.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        if (!order.getUser().getId().equals(currentUser().getId())) {
+            throw new SecurityException("Access denied");
+        }
+
+        return order;
+    }
+
+    // ---------------- ADMIN ----------------
+
+    @Override
+    public List<Order> getAllOrders() {
+        return orderRepo.findAll();
+    }
+
+    @Override
+    public void updateOrderStatus(Long orderId, String status) {
+
+        Order order = orderRepo.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        order.setStatus(status);
+        orderRepo.save(order);
+    }
+}
+package com.bookstore.service.impl;
+
+import com.bookstore.entity.Order;
+import com.bookstore.entity.Payment;
+import com.bookstore.exception.ResourceNotFoundException;
+import com.bookstore.repository.OrderRepository;
+import com.bookstore.repository.PaymentRepository;
+import com.bookstore.service.PaymentService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.UUID;
+
+@Service
+//@RequiredArgsConstructor
+public class PaymentServiceImpl implements PaymentService {
+
+	private final PaymentRepository paymentRepo;
+	private final OrderRepository orderRepo;
+
+	public PaymentServiceImpl(PaymentRepository paymentRepo, OrderRepository orderRepo) {
+		super();
+		this.paymentRepo = paymentRepo;
+		this.orderRepo = orderRepo;
+	}
+
+	@Override
+	public Payment initiatePayment(Long orderId) {
+
+		Order order = orderRepo.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+		Payment payment = new Payment();
+		payment.setOrderId(orderId);
+		payment.setAmount(order.getTotalAmount());
+		payment.setStatus("INITIATED");
+		payment.setPaymentId(UUID.randomUUID().toString());
+
+		return paymentRepo.save(payment);
+	}
+
+	@Override
+	public Payment verifyPayment(String paymentId, boolean success) {
+
+		Payment payment = paymentRepo.findByPaymentId(paymentId)
+				.orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
+
+		payment.setStatus(success ? "SUCCESS" : "FAILED");
+		return paymentRepo.save(payment);
+	}
+}
+package com.bookstore.service.impl;
+
+import com.bookstore.entity.Book;
+import com.bookstore.entity.Rating;
+import com.bookstore.exception.ResourceNotFoundException;
+import com.bookstore.repository.BookRepository;
+import com.bookstore.repository.RatingRepository;
+import com.bookstore.service.RatingService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.List;
+import java.util.Optional; // Add this line!
+
+@Service
+//@RequiredArgsConstructor
+@Transactional
+public class RatingServiceImpl implements RatingService {
+
+    private final BookRepository bookRepository;
+    private final RatingRepository ratingRepository;
+
+    public RatingServiceImpl(BookRepository bookRepository, RatingRepository ratingRepository) {
+		super();
+		this.bookRepository = bookRepository;
+		this.ratingRepository = ratingRepository;
+	}
+    @Override
+    public void addRating(Long bookId, Integer rating, String comment, String username) {
+        // 1. Get real identity from Token
+        String authenticatedEmail = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication().getName();
+
+        // 2. Look for existing rating
+        Optional<Rating> existingRating = ratingRepository.findByBookIdAndUsername(bookId, authenticatedEmail);
+
+        if (existingRating.isPresent()) {
+            // UPDATE EXISTING
+            Rating entity = existingRating.get();
+            entity.setRating(rating);
+            entity.setComment(comment);
+            entity.setRatedDate(java.time.LocalDate.now()); // Update the date
+            ratingRepository.save(entity);
+        } else {
+            // CREATE NEW
+            Book book = bookRepository.findById(bookId)
+                    .orElseThrow(() -> new RuntimeException("Book not found"));
+
+            Rating ratingEntity = new Rating();
+            ratingEntity.setRating(rating);
+            ratingEntity.setComment(comment);
+            ratingEntity.setUsername(authenticatedEmail);
+            ratingEntity.setBook(book);
+
+            ratingRepository.save(ratingEntity);
+        }
+    }
+    
+    @Override
+    public List<Rating> getRatingsByBookId(Long bookId) {
+        return ratingRepository.findByBookId(bookId);
+    }
+    
+    
+ // RatingServiceImpl.java
+
+    @Override
+    @Transactional
+    public void deleteRating(Long bookId, String username) {
+        // 1. Find the specific rating
+        Rating rating = ratingRepository.findByBookIdAndUsername(bookId, username)
+                .orElseThrow(() -> new RuntimeException("Review not found for this user on this book"));
+
+        // 2. Delete it
+        ratingRepository.delete(rating);
+    }
+}
+package com.bookstore.service.impl;
+
+import com.bookstore.dto.RegisterRequest;
+import com.bookstore.dto.UpdateProfileRequest;
+import com.bookstore.entity.RoleType;
+import com.bookstore.entity.User;
+import com.bookstore.exception.ResourceNotFoundException;
+import com.bookstore.repository.UserRepository;
+import com.bookstore.service.UserService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Set;
+
+@Service
+//@RequiredArgsConstructor
+public class UserServiceImpl implements UserService {
+
+	private final UserRepository repo;
+	private final PasswordEncoder encoder;
+
+	public UserServiceImpl(UserRepository repo, PasswordEncoder encoder) {
+		super();
+		this.repo = repo;
+		this.encoder = encoder;
+	}
+
+	@Override
+	public User register(RegisterRequest request) {
+		User user = User.builder().username(request.getUsername()).email(request.getEmail())
+				.passwordHash(encoder.encode(request.getPassword())).roles(Set.of(RoleType.USER)).build();
+
+		return repo.save(user);
+	}
+
+	@Override
+	public User findByEmail(String email) {
+		return repo.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+	}
+
+	@Override
+	public List<User> getAllUsers() {
+		return repo.findAll();
+	}
+
+	@Override
+	public User getUserById(Long id) {
+		return repo.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+	}
+
+	@Override
+	public User getCurrentUser() {
+		String email = SecurityContextHolder.getContext().getAuthentication().getName();
+		return findByEmail(email);
+	}
+
+	@Override
+	public User updateProfile(UpdateProfileRequest request) {
+		User user = getCurrentUser();
+		user.setUsername(request.getUsername());
+		user.setEmail(request.getEmail());
+		return repo.save(user);
+	}
+
+	@Override
+	public void changeUserRole(Long userId, String newRole) {
+		User user = getUserById(userId);
+		user.getRoles().clear();
+		user.getRoles().add(newRole);
+		repo.save(user);
+	}
+
+	@Override
+	public void deleteUser(Long id) {
+		repo.deleteById(id);
+	}
+}
+package com.bookstore.service.impl;
+
+import com.bookstore.entity.Book;
+import com.bookstore.entity.User;
+import com.bookstore.entity.Wishlist;
+import com.bookstore.exception.ResourceNotFoundException;
+import com.bookstore.repository.BookRepository;
+import com.bookstore.repository.UserRepository;
+import com.bookstore.repository.WishlistRepository;
+import com.bookstore.service.WishlistService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+//@RequiredArgsConstructor
+public class WishlistServiceImpl implements WishlistService {
+
+	private final WishlistRepository wishlistRepo;
+	private final BookRepository bookRepo;
+	private final UserRepository userRepo;
+
+	public WishlistServiceImpl(WishlistRepository wishlistRepo, BookRepository bookRepo, UserRepository userRepo) {
+		super();
+		this.wishlistRepo = wishlistRepo;
+		this.bookRepo = bookRepo;
+		this.userRepo = userRepo;
+	}
+
+	private User currentUser() {
+		String email = SecurityContextHolder.getContext().getAuthentication().getName();
+		return userRepo.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+	}
+
+	@Override
+	public Wishlist add(Long bookId) {
+
+		User user = currentUser();
+		Book book = bookRepo.findById(bookId).orElseThrow(() -> new ResourceNotFoundException("Book not found"));
+
+		return wishlistRepo.findByUserAndBook(user, book).orElseGet(() -> {
+			Wishlist w = new Wishlist();
+			w.setUser(user);
+			w.setBook(book);
+			return wishlistRepo.save(w);
+		});
+	}
+
+	@Override
+	public List<Wishlist> getMyWishlist() {
+		return wishlistRepo.findByUser(currentUser());
+	}
+
+	@Override
+	public void remove(Long bookId) {
+
+		User user = currentUser();
+		Book book = bookRepo.findById(bookId).orElseThrow(() -> new ResourceNotFoundException("Book not found"));
+
+		Wishlist wishlist = wishlistRepo.findByUserAndBook(user, book)
+				.orElseThrow(() -> new ResourceNotFoundException("Item not in wishlist"));
+
+		wishlistRepo.delete(wishlist);
+	}
+}
+
+
+
+this is service
+
+
+package com.bookstore.repository;
+
+import com.bookstore.entity.Author;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface AuthorRepository extends JpaRepository<Author, Long> {
+	Optional<Author> findByName(String name);
+}
+package com.bookstore.repository;
+
+import com.bookstore.entity.Book;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface BookRepository extends JpaRepository<Book, Long> {
+
+	List<Book> findByActiveTrue();
+
+	List<Book> findByTitleContainingIgnoreCaseAndActiveTrue(String title);
+
+	List<Book> findByAuthor_IdAndActiveTrue(Long authorId);
+
+	List<Book> findTop5ByActiveTrueOrderByCreatedAtDesc();
+}
+package com.bookstore.repository;
+
+import com.bookstore.entity.CartItem;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface CartItemRepository extends JpaRepository<CartItem, Long> {
+}
+package com.bookstore.repository;
+
+import com.bookstore.entity.Cart;
+import com.bookstore.entity.User;
+import org.springframework.data.jpa.repository.*;
+import org.springframework.data.repository.query.Param;
+
+import java.util.Optional;
+
+public interface CartRepository extends JpaRepository<Cart, Long> {
+
+    @Query("""
+        select distinct c from Cart c
+        left join fetch c.items i
+        left join fetch i.book
+        where c.user = :user
+    """)
+    Optional<Cart> findByUserWithItems(@Param("user") User user);
+
+    Optional<Cart> findByUser(User user);
+}
+package com.bookstore.repository;
+
+import com.bookstore.entity.Order;
+import com.bookstore.entity.User;
+import org.springframework.data.jpa.repository.*;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+
+public interface OrderRepository extends JpaRepository<Order, Long> {
+
+    @Query("""
+        select distinct o from Order o
+        left join fetch o.items i
+        left join fetch i.book
+        where o.user = :user
+        order by o.createdAt desc
+    """)
+    List<Order> findByUserWithItems(@Param("user") User user);
+
+    List<Order> findByUser(User user);
+}
+package com.bookstore.repository;
+
+import com.bookstore.entity.Payment;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface PaymentRepository extends JpaRepository<Payment, Long> {
+	Optional<Payment> findByPaymentId(String paymentId);
+}
+package com.bookstore.repository;
+
+import com.bookstore.entity.Rating;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface RatingRepository extends JpaRepository<Rating, Long> {
+    // Check if user already rated this book
+    boolean existsByBookIdAndUsername(Long bookId, String username);
+    
+    Optional<Rating> findByBookIdAndUsername(Long bookId, String username);
+    List<Rating> findByBookId(Long bookId);
+}package com.bookstore.repository;
+
+import com.bookstore.entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface UserRepository extends JpaRepository<User, Long> {
+	Optional<User> findByEmail(String email);
+
+	Optional<User> findByUsername(String username);
+}
+package com.bookstore.repository;
+
+import com.bookstore.entity.Book;
+import com.bookstore.entity.User;
+import com.bookstore.entity.Wishlist;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface WishlistRepository extends JpaRepository<Wishlist, Long> {
+
+	List<Wishlist> findByUser(User user);
+
+	Optional<Wishlist> findByUserAndBook(User user, Book book);
+}
+package com.bookstore.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import lombok.*;
-import java.time.Instant;
+import java.util.List;
 
-
-@Entity @Table(name="ratings")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class Rating {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long ratingId;
-    @ManyToOne @JoinColumn(name="book_id")
-    private Book book;
-    @ManyToOne @JoinColumn(name="user_id")
-    private User user;
-    private Integer ratingValue;
-    @Column(columnDefinition = "TEXT")
-    private String reviewText;
-    private Instant createdAt;
-    @PrePersist public void onCreate(){ createdAt = Instant.now(); }
-}
-package com.BookStore.entity;
-
-import jakarta.persistence.*;
-import lombok.*;
-import java.util.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
-@Table(name = "publishers")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class Publisher {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long publisherId;
-    private String name;
-    private String address;
-    private String contactEmail;
-    private String contactPhone;
-    private String websiteUrl;
+@Table(name = "authors")
+public class Author {
 
-    @OneToMany(mappedBy = "publisher")
-    private Set<Book> booksPublished = new HashSet<>();
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	@Column(nullable = false)
+	private String name;
+
+	// Prevent infinite recursion
+	@OneToMany(mappedBy = "author", fetch = FetchType.LAZY)
+	@JsonIgnore
+	private List<Book> books;
+
+	public Author() {
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public List<Book> getBooks() {
+		return books;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public void setBooks(List<Book> books) {
+		this.books = books;
+	}
 }
-package com.BookStore.entity;
+package com.bookstore.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.*;
-
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity @Table(name="order_items")
-
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class OrderItem {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @ManyToOne @JoinColumn(name="order_id")
-    private Order order;
-
-    @ManyToOne @JoinColumn(name="book_id")
-    private Book book;
-
-    private Integer quantity;
-    private Double price;
-}
-package com.BookStore.entity;
-
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.*;
-
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-@Entity @Table(name="orders")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class Order {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long orderId;
-
-    @ManyToOne
-    @JoinColumn(name="user_id")
-    private User user;
-
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrderItem> orderItems = new ArrayList<>();
-
-    private Double totalPrice;
-    private String orderStatus;
-    private Instant orderDate;
-    private String shippingAddress;
-    private String paymentMethod;
-    // checkout details can be stored or separate entity
-}
-package com.BookStore.entity;
-
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
-
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.*;
-
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
-@Entity
-@Table(name = "cart_items")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class CartItem {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @ManyToOne
-    @JoinColumn(name = "cart_id")
-    private Cart cart;
-
-    @ManyToOne
-    @JoinColumn(name = "book_id")
-    private Book book;
-
-    private Integer quantity;
-}
-package com.BookStore.entity;
-
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.*;
-
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-@Entity
-@Table(name = "carts")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class Cart {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long cartId;
-
-    @OneToOne
-    @JoinColumn(name = "user_id")
-    private User user;
-
-    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CartItem> items = new ArrayList<>();
-
-    private Instant createdAt;
-    private Instant updatedAt;
-
-    @PrePersist public void onCreate(){ createdAt = Instant.now(); updatedAt = createdAt;}
-    @PreUpdate public void onUpdate(){ updatedAt = Instant.now(); }
-}
-package com.BookStore.entity;
-
-import jakarta.persistence.*;
-import lombok.*;
-import java.time.Instant;
-import java.util.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "books")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Book {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long bookId;
 
-    @Column(unique = true)
-    private String isbn;
-    private String title;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "book_authors",
-        joinColumns = @JoinColumn(name = "book_id"),
-        inverseJoinColumns = @JoinColumn(name = "author_id")
-    )
-    private Set<Author> authors = new HashSet<>();
+	@Column(unique = true)
+	private String isbn;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "publisher_id")
-    private Publisher publisher;
+	private String title;
+	private String description;
+	private Double price;
+	private Integer stockQuantity;
 
-    private Instant publicationDate;
-    @ElementCollection
-    private Set<String> genres = new HashSet<>();
-    private String language;
+	@Column(columnDefinition = "DATE")
+	private LocalDate publishDate;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
 
-    private String formatType;
-    private Integer pageCount;
-    private String edition;
-    private Double price;
-    private String currency;
-    private Integer stockQuantity;
-    private String availabilityStatus;
-    private String sku;
-    private Integer reorderLevel;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private Boolean isActive;
-    private String shelfLocation;
-    private Double averageRating;
-    private Integer reviewsCount;
-    private String coverImageUrl;
-    private Double weightGrams;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "author_id", nullable = true)
+	@JsonIgnore
+	private Author author;
 
-    @PrePersist
-    public void onCreate() {
-        createdAt = Instant.now();
-        updatedAt = createdAt;
-        if (isActive == null) isActive = true;
-    }
+	
+	
 
-    @PreUpdate
-    public void onUpdate() {
-        updatedAt = Instant.now();
-    }
+//	@OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
+//	private List<Rating> ratings = new ArrayList<>();
+	
+	// Inside Book.java
+//	@OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+//	private List<Rating> ratings = new ArrayList<>();
+	
+	@OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+	private List<Rating> ratings = new ArrayList<>();
 
-	public Long getBookId() {
-		return bookId;
+
+	// Add this calculated method so the average is always accurate
+	public Double getAverageRating() {
+	    if (ratings == null || ratings.isEmpty()) {
+	        return 0.0;
+	    }
+	    return ratings.stream()
+	                  .mapToDouble(Rating::getRating)
+	                  .average()
+	                  .orElse(0.0);
 	}
 
-	public void setBookId(Long bookId) {
-		this.bookId = bookId;
+
+	private Instant createdAt;
+	private Instant updatedAt;
+
+	@Column(nullable = false)
+	private boolean active = true;
+	
+	@Column(name = "image_url")
+	private String imageUrl;
+
+	
+	public String getImageUrl() {
+		return imageUrl;
+	}
+
+	public void setImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
+	}
+
+
+//	public Book() {
+//	}
+
+	@PrePersist
+	void onCreate() {
+		createdAt = Instant.now();
+		updatedAt = createdAt;
+	}
+
+	@PreUpdate
+	void onUpdate() {
+		updatedAt = Instant.now();
+	}
+
+	// GETTERS & SETTERS
+	public Long getId() {
+		return id;
+	}
+
+	public String getIsbn() {
+		return isbn;
+	}
+
+	public String getTitle() {
+		return title;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public Double getPrice() {
+		return price;
+	}
+
+	public Integer getStockQuantity() {
+		return stockQuantity;
+	}
+
+	public LocalDate getPublishDate() {
+		return publishDate;
+	}
+
+	public boolean getActive() {
+		return active;
+	}
+
+	public Author getAuthor() {
+		return author;
+	}
+
+	public List<Rating> getRatings() {
+		return ratings;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public void setIsbn(String isbn) {
+		this.isbn = isbn;
+	}
+
+	public void setTitle(String title) {
+		this.title = title;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public void setPrice(Double price) {
+		this.price = price;
+	}
+
+	public void setStockQuantity(Integer stockQuantity) {
+		this.stockQuantity = stockQuantity;
+	}
+
+	public void setPublishDate(LocalDate publishDate) {
+		this.publishDate = publishDate;
+	}
+
+	public void setAuthor(Author author) {
+		this.author = author;
+	}
+
+	public void setRatings(List<Rating> ratings) {
+		this.ratings = ratings;
+	}
+
+	public void setActive(boolean active) {
+		// TODO Auto-generated method stub
+		this.active = active;
+
+	}
+}
+
+package com.bookstore.entity;
+
+import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@Entity
+@Table(name = "carts")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+public class Cart {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	@OneToOne
+	private User user;
+
+	@OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<CartItem> items = new ArrayList<>();
+
+	public Cart() {
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public User getUser() {
+		return user;
+	}
+
+	public List<CartItem> getItems() {
+		return items;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
+	}
+}
+package com.bookstore.entity;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "cart_items")
+public class CartItem {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	@ManyToOne
+    @JsonIgnore
+	private Cart cart;
+
+	@ManyToOne
+	private Book book;
+
+	private int quantity;
+
+	public CartItem() {
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public Cart getCart() {
+		return cart;
+	}
+
+	public Book getBook() {
+		return book;
+	}
+
+	public int getQuantity() {
+		return quantity;
+	}
+
+	public void setCart(Cart cart) {
+		this.cart = cart;
+	}
+
+	public void setBook(Book book) {
+		this.book = book;
+	}
+
+	public void setQuantity(int quantity) {
+		this.quantity = quantity;
+	}
+}
+package com.bookstore.entity;
+
+import jakarta.persistence.*;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = "orders")
+public class Order {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	@ManyToOne
+	private User user;
+
+	@OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+	
+	private List<OrderItem> items = new ArrayList<>();
+
+	private String status; // PLACED, SHIPPED, DELIVERED, CANCELLED
+	private double totalAmount;
+	private Instant createdAt;
+
+	@PrePersist
+	void onCreate() {
+		createdAt = Instant.now();
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public User getUser() {
+		return user;
+	}
+
+	public List<OrderItem> getItems() {
+		return items;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public double getTotalAmount() {
+		return totalAmount;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
+	}
+
+	public void setTotalAmount(double totalAmount) {
+		this.totalAmount = totalAmount;
+	}
+}
+package com.bookstore.entity;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "order_items")
+public class OrderItem {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+
+	@ManyToOne
+	@JoinColumn(name = "order_id")
+	@JsonBackReference
+	private Order order;
+
+	@ManyToOne
+	private Book book;
+
+	private int quantity;
+	private double priceAtPurchase;
+
+	public Long getId() {
+		return id;
+	}
+
+	public Order getOrder() {
+		return order;
+	}
+
+	public Book getBook() {
+		return book;
+	}
+
+	public int getQuantity() {
+		return quantity;
+	}
+
+	public double getPriceAtPurchase() {
+		return priceAtPurchase;
+	}
+
+	public void setOrder(Order order) {
+		this.order = order;
+	}
+
+	public void setBook(Book book) {
+		this.book = book;
+	}
+
+	public void setQuantity(int quantity) {
+		this.quantity = quantity;
+	}
+
+	public void setPriceAtPurchase(double priceAtPurchase) {
+		this.priceAtPurchase = priceAtPurchase;
+	}
+}
+package com.bookstore.entity;
+
+import jakarta.persistence.*;
+import java.time.Instant;
+
+@Entity
+@Table(name = "payments")
+public class Payment {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	private Long orderId;
+	private String paymentId;
+	private String status; // INITIATED, SUCCESS, FAILED
+	private double amount;
+
+	private Instant createdAt;
+
+	@PrePersist
+	void onCreate() {
+		createdAt = Instant.now();
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public Long getOrderId() {
+		return orderId;
+	}
+
+	public String getPaymentId() {
+		return paymentId;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public double getAmount() {
+		return amount;
+	}
+
+	public void setOrderId(Long orderId) {
+		this.orderId = orderId;
+	}
+
+	public void setPaymentId(String paymentId) {
+		this.paymentId = paymentId;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
+	}
+
+	public void setAmount(double amount) {
+		this.amount = amount;
+	}
+}
+package com.bookstore.entity;
+
+import jakarta.persistence.*;
+import java.time.LocalDate;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+@Entity
+@Table(name = "ratings")
+public class Rating {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	private Integer rating;
+	private String comment;
+	private String username;
+
+	private LocalDate ratedDate;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "book_id")
+	@JsonIgnore 
+	private Book book;
+
+	public Rating() {
+	}
+
+	@PrePersist
+	void onRate() {
+		ratedDate = LocalDate.now();
+	}
+
+	// GETTERS & SETTERS
+	public Long getId() {
+		return id;
+	}
+
+	public Integer getRating() {
+		return rating;
+	}
+
+	public String getComment() {
+		return comment;
+	}
+
+	public String getUsername() {
+		return username;
+	}
+
+	public LocalDate getRatedDate() {
+		return ratedDate;
+	}
+
+	public Book getBook() {
+		return book;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public void setRating(Integer rating) {
+		this.rating = rating;
+	}
+
+	public void setComment(String comment) {
+		this.comment = comment;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public void setRatedDate(LocalDate ratedDate) {
+		this.ratedDate = ratedDate;
+	}
+
+	public void setBook(Book book) {
+		this.book = book;
+	}
+}
+package com.bookstore.entity;
+
+public class RoleType {
+	public static final String USER = "ROLE_USER";
+	public static final String ADMIN = "ROLE_ADMIN";
+}
+package com.bookstore.entity;
+
+import jakarta.persistence.*;
+import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
+
+@Entity
+@Table(name = "users")
+public class User {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	private String username;
+
+	@Column(unique = true, nullable = false)
+	private String email;
+
+	@Column(nullable = false)
+	private String passwordHash;
+
+	@ElementCollection(fetch = FetchType.EAGER)
+	@CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
+	@Column(name = "role")
+	private Set<String> roles = new HashSet<>();
+
+	private Instant createdAt;
+	private Instant updatedAt;
+
+	public User() {
+	}
+
+	// Helper
+	public void addRole(String role) {
+		this.roles.add(role);
+	}
+
+	// Builder (kept)
+	public static class Builder {
+		private String username;
+		private String email;
+		private String passwordHash;
+		private Set<String> roles;
+
+		public Builder username(String username) {
+			this.username = username;
+			return this;
+		}
+
+		public Builder email(String email) {
+			this.email = email;
+			return this;
+		}
+
+		public Builder passwordHash(String passwordHash) {
+			this.passwordHash = passwordHash;
+			return this;
+		}
+
+		public Builder roles(Set<String> roles) {
+			this.roles = roles;
+			return this;
+		}
+
+		public User build() {
+			User u = new User();
+			u.username = this.username;
+			u.email = this.email;
+			u.passwordHash = this.passwordHash;
+			u.roles = this.roles;
+			return u;
+		}
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	// GETTERS
+	public Long getId() {
+		return id;
+	}
+
+	public String getUsername() {
+		return username;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public String getPasswordHash() {
+		return passwordHash;
+	}
+
+	public Set<String> getRoles() {
+		return roles;
+	}
+
+	// SETTERS
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	public void setPasswordHash(String passwordHash) {
+		this.passwordHash = passwordHash;
+	}
+
+	public void setRoles(Set<String> roles) {
+		this.roles = roles;
+	}
+
+	@PrePersist
+	void onCreate() {
+		createdAt = Instant.now();
+		updatedAt = createdAt;
+	}
+
+	@PreUpdate
+	void onUpdate() {
+		updatedAt = Instant.now();
+	}
+}
+package com.bookstore.entity;
+
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "wishlist", uniqueConstraints = @UniqueConstraint(columnNames = { "user_id", "book_id" }))
+public class Wishlist {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	@ManyToOne
+	private User user;
+
+	@ManyToOne
+	private Book book;
+
+	public Wishlist() {
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public User getUser() {
+		return user;
+	}
+
+	public Book getBook() {
+		return book;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
+	}
+
+	public void setBook(Book book) {
+		this.book = book;
+	}
+}
+
+
+package com.bookstore.dto;
+
+import java.time.LocalDate;
+
+import jakarta.persistence.Column;
+
+public class BookDto {
+
+	private Long id;
+	private String isbn;
+	private String title;
+	private String description;
+	private Double price;
+	private Integer stockQuantity;
+	private LocalDate publishDate;
+
+	// Relations (DTO-level only)
+	private String authorName;
+	private Double averageRating;
+	private boolean active;
+	private Long authorId;
+
+	
+	private String imageUrl;
+
+	
+	public Long getAuthorId() {
+	    return authorId;
+	}
+
+	public void setAuthorId(Long authorId) {
+	    this.authorId = authorId;
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
 	}
 
 	public String getIsbn() {
@@ -911,76 +1841,12 @@ public class Book {
 		this.title = title;
 	}
 
-	public Set<Author> getAuthors() {
-		return authors;
-	}
-
-	public void setAuthors(Set<Author> authors) {
-		this.authors = authors;
-	}
-
-	public Publisher getPublisher() {
-		return publisher;
-	}
-
-	public void setPublisher(Publisher publisher) {
-		this.publisher = publisher;
-	}
-
-	public Instant getPublicationDate() {
-		return publicationDate;
-	}
-
-	public void setPublicationDate(Instant publicationDate) {
-		this.publicationDate = publicationDate;
-	}
-
-	public Set<String> getGenres() {
-		return genres;
-	}
-
-	public void setGenres(Set<String> genres) {
-		this.genres = genres;
-	}
-
-	public String getLanguage() {
-		return language;
-	}
-
-	public void setLanguage(String language) {
-		this.language = language;
-	}
-
 	public String getDescription() {
 		return description;
 	}
 
 	public void setDescription(String description) {
 		this.description = description;
-	}
-
-	public String getFormatType() {
-		return formatType;
-	}
-
-	public void setFormatType(String formatType) {
-		this.formatType = formatType;
-	}
-
-	public Integer getPageCount() {
-		return pageCount;
-	}
-
-	public void setPageCount(Integer pageCount) {
-		this.pageCount = pageCount;
-	}
-
-	public String getEdition() {
-		return edition;
-	}
-
-	public void setEdition(String edition) {
-		this.edition = edition;
 	}
 
 	public Double getPrice() {
@@ -991,14 +1857,6 @@ public class Book {
 		this.price = price;
 	}
 
-	public String getCurrency() {
-		return currency;
-	}
-
-	public void setCurrency(String currency) {
-		this.currency = currency;
-	}
-
 	public Integer getStockQuantity() {
 		return stockQuantity;
 	}
@@ -1007,60 +1865,20 @@ public class Book {
 		this.stockQuantity = stockQuantity;
 	}
 
-	public String getAvailabilityStatus() {
-		return availabilityStatus;
+	public LocalDate getPublishDate() {
+		return publishDate;
 	}
 
-	public void setAvailabilityStatus(String availabilityStatus) {
-		this.availabilityStatus = availabilityStatus;
+	public void setPublishDate(LocalDate publishDate) {
+		this.publishDate = publishDate;
 	}
 
-	public String getSku() {
-		return sku;
+	public String getAuthorName() {
+		return authorName;
 	}
 
-	public void setSku(String sku) {
-		this.sku = sku;
-	}
-
-	public Integer getReorderLevel() {
-		return reorderLevel;
-	}
-
-	public void setReorderLevel(Integer reorderLevel) {
-		this.reorderLevel = reorderLevel;
-	}
-
-	public Instant getCreatedAt() {
-		return createdAt;
-	}
-
-	public void setCreatedAt(Instant createdAt) {
-		this.createdAt = createdAt;
-	}
-
-	public Instant getUpdatedAt() {
-		return updatedAt;
-	}
-
-	public void setUpdatedAt(Instant updatedAt) {
-		this.updatedAt = updatedAt;
-	}
-
-	public Boolean getIsActive() {
-		return isActive;
-	}
-
-	public void setIsActive(Boolean isActive) {
-		this.isActive = isActive;
-	}
-
-	public String getShelfLocation() {
-		return shelfLocation;
-	}
-
-	public void setShelfLocation(String shelfLocation) {
-		this.shelfLocation = shelfLocation;
+	public void setAuthorName(String authorName) {
+		this.authorName = authorName;
 	}
 
 	public Double getAverageRating() {
@@ -1071,476 +1889,1084 @@ public class Book {
 		this.averageRating = averageRating;
 	}
 
-	public Integer getReviewsCount() {
-		return reviewsCount;
+	public boolean isActive() {
+		return active;
 	}
 
-	public void setReviewsCount(Integer reviewsCount) {
-		this.reviewsCount = reviewsCount;
+	public void setActive(boolean active) {
+		this.active = active;
 	}
 
-	public String getCoverImageUrl() {
-		return coverImageUrl;
+	public String getImageUrl() {
+		return imageUrl;
 	}
 
-	public void setCoverImageUrl(String coverImageUrl) {
-		this.coverImageUrl = coverImageUrl;
+	public void setImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
+	}
+		
+}
+package com.bookstore.dto;
+
+public class CartItemDto {
+
+	private Long bookId;
+	private int quantity;
+
+	public Long getBookId() {
+		return bookId;
 	}
 
-	public Double getWeightGrams() {
-		return weightGrams;
+	public int getQuantity() {
+		return quantity;
 	}
 
-	public void setWeightGrams(Double weightGrams) {
-		this.weightGrams = weightGrams;
-	}
-
-	public Book(Long bookId, String isbn, String title, Set<Author> authors, Publisher publisher,
-			Instant publicationDate, Set<String> genres, String language, String description, String formatType,
-			Integer pageCount, String edition, Double price, String currency, Integer stockQuantity,
-			String availabilityStatus, String sku, Integer reorderLevel, Instant createdAt, Instant updatedAt,
-			Boolean isActive, String shelfLocation, Double averageRating, Integer reviewsCount, String coverImageUrl,
-			Double weightGrams) {
-		super();
+	public void setBookId(Long bookId) {
 		this.bookId = bookId;
-		this.isbn = isbn;
+	}
+
+	public void setQuantity(int quantity) {
+		this.quantity = quantity;
+	}
+}
+package com.bookstore.dto;
+
+public class CartItemResponseDto {
+    private Long bookId;
+    private String title;
+    private double price;
+    private int quantity;
+    private String imageUrl;
+	public Long getBookId() {
+		return bookId;
+	}
+	public void setBookId(Long bookId) {
+		this.bookId = bookId;
+	}
+	public String getTitle() {
+		return title;
+	}
+	public void setTitle(String title) {
 		this.title = title;
-		this.authors = authors;
-		this.publisher = publisher;
-		this.publicationDate = publicationDate;
-		this.genres = genres;
-		this.language = language;
-		this.description = description;
-		this.formatType = formatType;
-		this.pageCount = pageCount;
-		this.edition = edition;
+	}
+	public double getPrice() {
+		return price;
+	}
+	public void setPrice(double price) {
 		this.price = price;
-		this.currency = currency;
-		this.stockQuantity = stockQuantity;
-		this.availabilityStatus = availabilityStatus;
-		this.sku = sku;
-		this.reorderLevel = reorderLevel;
-		this.createdAt = createdAt;
-		this.updatedAt = updatedAt;
-		this.isActive = isActive;
-		this.shelfLocation = shelfLocation;
-		this.averageRating = averageRating;
-		this.reviewsCount = reviewsCount;
-		this.coverImageUrl = coverImageUrl;
-		this.weightGrams = weightGrams;
+	}
+	public int getQuantity() {
+		return quantity;
+	}
+	public void setQuantity(int quantity) {
+		this.quantity = quantity;
+	}
+	public String getImageUrl() {
+		return imageUrl;
+	}
+	public void setImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
 	}
     
     
+}
+package com.bookstore.dto;
+
+import java.util.List;
+
+public class CartResponseDto {
+    private Long id;
+    private List<CartItemResponseDto> items;
+    
+    private double totalAmount;
+	public List<CartItemResponseDto> getItems() {
+		return items;
+	}
+	public void setItems(List<CartItemResponseDto> items) {
+		this.items = items;
+	}
+	public double getTotalAmount() {
+		return totalAmount;
+	}
+	public void setTotalAmount(double totalAmount) {
+		this.totalAmount = totalAmount;
+	}
+
+    // getters & setters
     
     
     
-    
-}
-package com.BookStore.entity;
-
-import jakarta.persistence.*;
-import lombok.*;
-import java.time.Instant;
-import java.util.*;
-
-@Entity
-@Table(name = "authors")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class Author {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long authorId;
-    private String name;
-
-    @Column(columnDefinition = "TEXT")
-    private String biography;
-    private Instant dateOfBirth;
-    private String nationality;
-
-    @ManyToMany(mappedBy = "authors")
-    private Set<Book> books = new HashSet<>();
-}
-package com.BookStore.repository;
-
-import java.util.Optional;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-
-import com.BookStore.entity.Book;
-import com.BookStore.entity.User;
-
-public interface UserRepository extends JpaRepository<User, Long>{
-    Optional<User> findByEmail(String email);
-    Optional<User> findByUsername(String username);
 }
 
-package com.BookStore.repository;
+package com.bookstore.dto;
 
-import org.springframework.data.jpa.repository.JpaRepository;
+public class LoginRequest {
 
-import com.BookStore.entity.Book;
-import com.BookStore.entity.Cart;
-import com.BookStore.entity.Rating;
+	private String email;
+	private String password;
 
-public interface RatingRepository extends JpaRepository<Rating, Long>{}
-package com.BookStore.repository;
+	public String getEmail() {
+		return email;
+	}
 
+	public void setEmail(String email) {
+		this.email = email;
+	}
 
+	public String getPassword() {
+		return password;
+	}
 
-import org.springframework.data.jpa.repository.JpaRepository;
-
-import com.BookStore.entity.Publisher;
-
-public interface PublisherRepository extends JpaRepository<Publisher, Long>{}
-package com.BookStore.repository;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-
-import com.BookStore.entity.Book;
-import com.BookStore.entity.Cart;
-import com.BookStore.entity.Order;
-
-public interface OrderRepository extends JpaRepository<Order, Long>{}
-
-
-
-package com.BookStore.repository;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-
-import com.BookStore.entity.Book;
-import com.BookStore.entity.Cart;
-
-public interface CartRepository extends JpaRepository<Cart, Long>{}package com.BookStore.repository;
-
-import com.BookStore.entity.Book;
-
-import java.util.Optional;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-public interface BookRepository extends JpaRepository<Book, Long> {
-    Optional<Book> findByIsbn(String isbn);
+	public void setPassword(String password) {
+		this.password = password;
+	}
 }
-package com.BookStore.repository;
+package com.bookstore.dto;
 
-import com.BookStore.entity.Author;
-import com.BookStore.entity.Book;
+public class LoginResponse {
 
-import java.util.Optional;
+	private String token;
+	private String role;
+	private String message;
 
-import org.springframework.data.jpa.repository.JpaRepository;
+	public LoginResponse() {
+	}
 
-public interface AuthorRepository extends JpaRepository<Author, Long>{}package com.BookStore.exception;
+	public LoginResponse(String token, String role, String message) {
+		this.token = token;
+		this.role = role;
+		this.message = message;
+	}
 
-public class ResourceNotFoundException extends RuntimeException {
-    public ResourceNotFoundException(String msg) {
-        super(msg);
-    }
+	public String getToken() {
+		return token;
+	}
+
+	public void setToken(String token) {
+		this.token = token;
+	}
+
+	public String getRole() {
+		return role;
+	}
+
+	public void setRole(String role) {
+		this.role = role;
+	}
+
+	public String getMessage() {
+		return message;
+	}
+
+	public void setMessage(String message) {
+		this.message = message;
+	}
 }
-package com.BookStore.exception;
+package com.bookstore.dto;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.bind.annotation.ExceptionHandler;
+public class PaymentRequestDto {
+	private Long orderId;
 
-@ControllerAdvice
-public class GlobalExceptionHandler {
+	public Long getOrderId() {
+		return orderId;
+	}
 
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<?> handleNotFound(ResourceNotFoundException ex) {
-        return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
-    }
-
-    @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<?> handleBadRequest(BadRequestException ex) {
-        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
-    }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<?> handleGeneral(Exception ex) {
-        return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+	public void setOrderId(Long orderId) {
+		this.orderId = orderId;
+	}
 }
-package com.BookStore.exception;
+package com.bookstore.dto;
 
-public class BadRequestException extends RuntimeException {
-    public BadRequestException(String msg) {
-        super(msg);
-    }
+public class PaymentVerifyDto {
+	private String paymentId;
+	private boolean success;
+
+	public String getPaymentId() {
+		return paymentId;
+	}
+
+	public boolean isSuccess() {
+		return success;
+	}
+
+	public void setPaymentId(String paymentId) {
+		this.paymentId = paymentId;
+	}
+
+	public void setSuccess(boolean success) {
+		this.success = success;
+	}
 }
-package com.BookStore.security;
+package com.bookstore.dto;
 
-import io.jsonwebtoken.*;
-import org.springframework.stereotype.Component;
+import java.time.LocalDate;
 
-import java.util.Date;
+public class RatingDto {
 
-@Component
-public class JwtTokenProvider {
+	private Integer rating;
+	private String comment;
+	private String username;
+	private LocalDate ratedDate;
 
-    private final String SECRET_KEY = "BOOKSTORE_SECRET_KEY_123";
+	public Integer getRating() {
+		return rating;
+	}
 
-    public String generateToken(String username) {
-        return Jwts.builder()
-                .setSubject(username)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 86400000))
-                .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
-                .compact();
-    }
+	public void setRating(Integer rating) {
+		this.rating = rating;
+	}
 
-    public String extractUsername(String token) {
-        return Jwts.parser()
-                .setSigningKey(SECRET_KEY)
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
-    }
+	public String getComment() {
+		return comment;
+	}
 
-    public boolean validateToken(String token) {
-        try {
-            Jwts.parser()
-                    .setSigningKey(SECRET_KEY)
-                    .parseClaimsJws(token);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
+	public void setComment(String comment) {
+		this.comment = comment;
+	}
+
+	public String getUsername() {
+		return username;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public LocalDate getRatedDate() {
+		return ratedDate;
+	}
+
+	public void setRatedDate(LocalDate ratedDate) {
+		this.ratedDate = ratedDate;
+	}
 }
-package com.BookStore.security;
+package com.bookstore.dto;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
+public class RegisterRequest {
+
+	private String username;
+	private String email;
+	private String password;
+
+	public String getUsername() {
+		return username;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
+}
+package com.bookstore.dto;
+
+public class UpdateProfileRequest {
+
+	private String username;
+	private String email;
+
+	public String getUsername() {
+		return username;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+}
+package com.bookstore.controller;
+
+import com.bookstore.dto.BookDto;
+import com.bookstore.entity.Book;
+import com.bookstore.exception.ResourceNotFoundException;
+import com.bookstore.repository.BookRepository;
+import com.bookstore.service.BookService;
+
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-
-@Component
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
-
-    @Autowired
-    private JwtTokenProvider jwtProvider;
-
-    @Autowired
-    private CustomUserDetailsService userDetailsService;
-
-    @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
-            throws ServletException, IOException {
-
-        String header = request.getHeader("Authorization");
-
-        String token = null;
-        String username = null;
-
-        if (header != null && header.startsWith("Bearer ")) {
-            token = header.substring(7);
-            username = jwtProvider.extractUsername(token);
-        }
-
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-
-            var userDetails = userDetailsService.loadUserByUsername(username);
-
-            if (jwtProvider.validateToken(token)) {
-                UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(userDetails, null,
-                                userDetails.getAuthorities());
-
-                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                SecurityContextHolder.getContext().setAuthentication(auth);
-            }
-        }
-
-        filterChain.doFilter(request, response);
-    }
-}
-package com.BookStore.security;
-
-import com.BookStore.entity.User;
-import com.BookStore.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.*;
-import org.springframework.stereotype.Service;
-
-@Service
-public class CustomUserDetailsService implements UserDetailsService {
-
-    @Autowired
-    private UserRepository userRepo;
-
-    @Override
-    public UserDetails loadUserByUsername(String username)
-            throws UsernameNotFoundException {
-
-        User user = userRepo.findByEmail(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-
-        return org.springframework.security.core.userdetails.User.builder()
-                .username(user.getEmail())
-//                .password(user.getPassword())
-                .roles("USER")
-                .build();
-    }
-}
-package com.BookStore.service;
-
-import com.BookStore.dto.BookDto;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
-public interface BookService {
+@RestController
+@RequestMapping("/api/admin/books")
+//@RequiredArgsConstructor
+public class AdminBookController {
 
-    BookDto createBook(BookDto bookDto);
+    private final BookService bookService;
+    private final BookRepository bookRepository;
 
-    BookDto updateBook(Long id, BookDto bookDto);
-
-    BookDto getBookById(Long id);
-
-    List<BookDto> getAllBooks();
-
-    void deleteBook(Long id);
-}
-package com.BookStore.service.impl;
-
-import com.BookStore.entity.User;
-import com.BookStore.repository.UserRepository;
-import com.BookStore.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-@Service
-public class UserServiceImpl implements UserService {
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Override
-    public User findByEmail(String email) {
-        return userRepository.findByEmail(email).orElse(null);
-    }
-}
-package com.BookStore.service.impl;
-
-import com.BookStore.dto.BookDto;
-import com.BookStore.entity.Book;
-import com.BookStore.exception.ResourceNotFoundException;
-import com.BookStore.repository.BookRepository;
-import com.BookStore.service.BookService;
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.stream.Collectors;
-
-@Service
-public class BookServiceImpl implements BookService {
-
-    @Autowired
-    private BookRepository bookRepository;
-
-    @Autowired
-    private ModelMapper modelMapper;
-
-    private BookDto mapToDto(Book book) {
-        return modelMapper.map(book, BookDto.class);
+    public AdminBookController(BookService bookService, BookRepository bookRepository) {
+        super();
+        this.bookService = bookService;
+        this.bookRepository = bookRepository;
     }
 
-    private Book mapToEntity(BookDto dto) {
-        return modelMapper.map(dto, Book.class);
+    // ---------------- CREATE BOOK ----------------
+    @PostMapping
+    public BookDto createBook(@RequestBody BookDto dto) {
+        return bookService.createBook(dto);
     }
 
-    @Override
-    public BookDto createBook(BookDto bookDto) {
-        Book book = mapToEntity(bookDto);
-        Book saved = bookRepository.save(book);
-        return mapToDto(saved);
+    // ---------------- UPDATE BOOK ----------------
+    @PutMapping("/{id}")
+    public BookDto updateBook(@PathVariable Long id, @RequestBody BookDto dto) {
+        return bookService.updateBook(id, dto);
     }
 
-//    @Override
-//    public BookDto updateBook(Long id, BookDto bookDto) {
-//        Book existing = bookRepository.findById(id)
-//                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + id));
-//
-//        existing.setTitle(bookDto.getTitle());
-//        existing.setAuthors(bookDto.getAuthors());
-//        existing.setPrice(bookDto.getPrice());
-//        existing.setPublisher(bookDto.getPublisher());
-//        existing.setIsbn(bookDto.getIsbn());
-//        existing.setStock(bookDto.getStock());
-//
-//        Book updated = bookRepository.save(existing);
-//
-//        return mapToDto(updated);
-//    }
+    // ---------------- ENABLE / DISABLE ----------------
+    @PutMapping("/{id}/status")
+    public String updateStatus(
+            @PathVariable Long id,
+            @RequestParam boolean active
+    ) {
+        bookService.updateBookStatus(id, active);
+        return "Book status updated";
+    }
 
-    @Override
-    public BookDto getBookById(Long id) {
+    // ---------------- DELETE ----------------
+    @DeleteMapping("/{id}")
+    public void deleteBook(@PathVariable Long id) {
+        bookService.deleteBook(id);
+    }
+
+    // ---------------- IMAGE UPLOAD ----------------
+    @PostMapping("/{id}/image")
+    public void uploadImage(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file
+    ) throws IOException {
+
+        Path uploadDir = Paths.get("uploads/books");
+        Files.createDirectories(uploadDir);
+
+        Path imagePath = uploadDir.resolve(id + ".png");
+        Files.write(imagePath, file.getBytes());
+
         Book book = bookRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + id));
-        return mapToDto(book);
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found"));
+
+        // ✅ ONLY CHANGE IS HERE
+        book.setImageUrl("/images/books/" + id + ".png");
+
+        bookRepository.save(book);
     }
 
-    @Override
+    // ---------------- PUBLIC READ APIs ----------------
+    @GetMapping("/{id}")
+    public BookDto getBook(@PathVariable Long id) {
+        return bookService.getBookById(id);
+    }
+
+    @GetMapping
     public List<BookDto> getAllBooks() {
-        return bookRepository.findAll()
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+        return bookService.getAllBooks();
     }
 
-    @Override
-    public void deleteBook(Long id) {
-        Book existing = bookRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + id));
+    @GetMapping("/search")
+    public List<BookDto> search(@RequestParam String q) {
+        return bookService.searchBooks(q);
+    }
 
-        bookRepository.delete(existing);
+    @GetMapping("/by-author/{authorId}")
+    public List<BookDto> byAuthor(@PathVariable Long authorId) {
+        return bookService.getBooksByAuthor(authorId);
+    }
+
+    @GetMapping("/top-rated")
+    public List<BookDto> topRated() {
+        return bookService.getTopRatedBooks();
+    }
+
+    @GetMapping("/latest")
+    public List<BookDto> latest() {
+        return bookService.getLatestBooks();
     }
 }
-package com.BookStore.service;
+package com.bookstore.controller;
 
-import com.BookStore.entity.User;
+import com.bookstore.entity.Order;
+import com.bookstore.service.OrderService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
 
-public interface UserService {
-    User findByEmail(String email);
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/admin/orders")
+//@RequiredArgsConstructor
+public class AdminOrderController {
+
+	private final OrderService orderService;
+
+	public AdminOrderController(OrderService orderService) {
+		super();
+		this.orderService = orderService;
+	}
+
+	@GetMapping
+	public List<Order> allOrders() {
+		return orderService.getAllOrders();
+	}
+
+	@PutMapping("/{id}/status")
+	public String updateStatus(@PathVariable Long id, @RequestParam String status) {
+		orderService.updateOrderStatus(id, status);
+		return "Order status updated";
+	}
 }
-package com.BookStore.service;
+package com.bookstore.controller;
 
-import com.BookStore.entity.User;
-import com.BookStore.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.stereotype.Service;
+import com.bookstore.entity.RoleType;
+import org.springframework.web.bind.annotation.*;
 
-@Service
-public class CustomUserDetailsService implements UserDetailsService {
+@RestController
+@RequestMapping("/api/admin/roles")
+public class AdminRolesController {
 
-    @Autowired
-    private UserRepository userRepository;
+	// POST /api/admin/roles
+	@PostMapping
+	public String createRole(@RequestParam String role) {
 
-    @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+		if (RoleType.USER.equals(role) || RoleType.ADMIN.equals(role)) {
+			return "Role already exists";
+		}
 
-        return org.springframework.security.core.userdetails.User
-                .builder()
-                .username(user.getEmail())
-                .password(user.getPasswordHash())
-//                .roles(user.getRoles())
-                .build();
+		// Since roles are constants, new roles are NOT supported
+		return "Dynamic role creation is not supported";
+	}
+}
+package com.bookstore.controller;
+
+import com.bookstore.entity.Author;
+import com.bookstore.entity.User;
+import com.bookstore.service.AuthorService;
+import com.bookstore.service.UserService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/admin/users")
+//@RequiredArgsConstructor
+public class AdminUserController {
+
+	private final UserService userService;
+	private final AuthorService authorService;
+
+	public AdminUserController(UserService userService, AuthorService authorService) {
+		super();
+		this.userService = userService;
+		this.authorService = authorService;
+	}
+
+	// GET /api/admin/users
+	@GetMapping("/getall")
+	public List<User> getAllUsers() {
+		return userService.getAllUsers();
+	}
+
+	// GET /api/admin/users/{id}
+	@GetMapping("/{id}")
+	public User getUserById(@PathVariable Long id) {
+		return userService.getUserById(id);
+	}
+
+	// PUT /api/admin/users/{id}/role
+	@PutMapping("/{id}/role")
+	public String changeRole(@PathVariable Long id, @RequestParam String role) {
+		userService.changeUserRole(id, role);
+		return "Role updated";
+	}
+
+	// DELETE /api/admin/users/{id}
+	@DeleteMapping("/{id}")
+	public String deleteUser(@PathVariable Long id) {
+		userService.deleteUser(id);
+		return "User deleted";
+	}
+
+	// POST /api/admin/authors
+	@PostMapping
+	public Author create(@RequestParam String name) {
+		return authorService.createAuthor(name);
+	}
+
+	// PUT /api/admin/authors/{id}
+	@PutMapping("/{id}")
+	public Author update(@PathVariable Long id, @RequestParam String name) {
+		return authorService.updateAuthor(id, name);
+	}
+
+	// DELETE /api/admin/authors/{id}
+//	@DeleteMapping("/{id}")
+//	public String delete(@PathVariable Long id) {
+//		authorService.deleteAuthor(id);
+//		return "Author deleted";
+//	}
+}
+package com.bookstore.controller;
+
+import com.bookstore.dto.LoginRequest;
+import com.bookstore.dto.LoginResponse;
+import com.bookstore.dto.RegisterRequest;
+import com.bookstore.dto.UpdateProfileRequest;
+import com.bookstore.entity.Author;
+import com.bookstore.entity.RoleType;
+import com.bookstore.entity.User;
+import com.bookstore.security.JwtTokenProvider;
+import com.bookstore.service.AuthorService;
+import com.bookstore.service.UserService;
+import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+//@CrossOrigin(origins = "https://books-storeapp.netlify.app")
+@RestController
+@RequestMapping("/api/auth")
+//@RequiredArgsConstructor
+public class AuthController {
+
+	private final AuthenticationManager authenticationManager;
+	private final JwtTokenProvider jwtTokenProvider;
+	private final UserService userService;
+
+	private final AuthorService authorService;
+
+	public AuthController(AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider,
+			UserService userService, AuthorService authorService) {
+		super();
+		this.authenticationManager = authenticationManager;
+		this.jwtTokenProvider = jwtTokenProvider;
+		this.userService = userService;
+		this.authorService = authorService;
+	}
+
+	@PostMapping("/register")
+	public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+		userService.register(request);
+		return ResponseEntity.ok("User registered successfully");
+	}
+
+	@PostMapping("/login")
+	public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+
+		Authentication authentication = authenticationManager
+				.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+
+		User user = userService.findByEmail(request.getEmail());
+
+		// ✅ ROLE AS STRING
+		String role = user.getRoles().stream().findFirst().orElse(RoleType.USER);
+
+		String token = jwtTokenProvider.generateToken(user.getEmail(), role);
+
+		return ResponseEntity.ok(new LoginResponse(token, role, "Login successful"));
+	}
+
+	@PutMapping("/profile")
+	public ResponseEntity<?> updateProfile(@RequestBody UpdateProfileRequest request) {
+		userService.updateProfile(request);
+		return ResponseEntity.ok("Profile updated successfully");
+	}
+	
+	
+	@GetMapping("/me")
+	public ResponseEntity<?> getCurrentUser(Authentication authentication) {
+	    if (authentication == null) {
+	        return ResponseEntity.status(401).body("Not authenticated");
+	    }
+	    // authentication.getName() returns the email/username from the JWT token
+	    User user = userService.findByEmail(authentication.getName());
+	    return ResponseEntity.ok(user); 
+	}
+
+	@GetMapping
+	public List<Author> getAllAuthors() {
+		return authorService.getAllAuthors();
+	}
+
+	// GET /api/authors/{id}
+	@GetMapping("/{id}")
+	public Author getAuthor(@PathVariable Long id) {
+		return authorService.getAuthorById(id);
+	}
+}
+package com.bookstore.controller;
+
+import java.util.List;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.bookstore.entity.Author;
+import com.bookstore.service.AuthorService;
+
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@RequestMapping("/api/authors")
+//@RequiredArgsConstructor
+public class AuthorController {
+
+    private final AuthorService authorService;
+    
+    
+
+    public AuthorController(AuthorService authorService) {
+		super();
+		this.authorService = authorService;
+	}
+
+
+
+	@GetMapping
+    public List<Author> getAllAuthors() {
+        return authorService.getAllAuthors();
     }
+}
+package com.bookstore.controller;
+
+import com.bookstore.dto.BookDto;
+import com.bookstore.service.BookService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import com.bookstore.dto.BookDto;
+import com.bookstore.entity.Book;
+import com.bookstore.exception.ResourceNotFoundException;
+import com.bookstore.repository.BookRepository;
+import com.bookstore.service.BookService;
+
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+@RestController
+@RequestMapping("/api/books")
+//@RequiredArgsConstructor
+public class BookController {
+
+	private final BookService bookService;
+
+	public BookController(BookService bookService) {
+		super();
+		this.bookService = bookService;
+	}
+
+	// ADMIN
+	@PostMapping
+	public BookDto createBook(@RequestBody BookDto dto) {
+		return bookService.createBook(dto);
+	}
+
+	// ADMIN
+	@PutMapping("/{id}")
+	public BookDto updateBook(@PathVariable Long id, @RequestBody BookDto dto) {
+		return bookService.updateBook(id, dto);
+	}
+
+	// PUBLIC
+	@GetMapping("/{id}")
+	public BookDto getBook(@PathVariable Long id) {
+		return bookService.getBookById(id);
+	}
+
+	// PUBLIC
+	@GetMapping
+	public List<BookDto> getAllBooks() {
+		return bookService.getAllBooks();
+	}
+
+	@GetMapping("/byadmin")
+	public List<BookDto> getAllBooksByAdmin() {
+		return bookService.getAllBooksByAdmin();
+	}
+	
+	// ADMIN
+	@DeleteMapping("/{id}")
+	public void deleteBook(@PathVariable Long id) {
+		bookService.deleteBook(id);
+	}
+
+	@GetMapping("/search")
+	public List<BookDto> search(@RequestParam String q) {
+		return bookService.searchBooks(q);
+	}
+
+	@GetMapping("/by-author/{authorId}")
+	public List<BookDto> byAuthor(@PathVariable Long authorId) {
+		return bookService.getBooksByAuthor(authorId);
+	}
+
+	@GetMapping("/top-rated")
+	public List<BookDto> topRated() {
+		return bookService.getTopRatedBooks();
+	}
+
+	@GetMapping("/latest")
+	public List<BookDto> latest() {
+		return bookService.getLatestBooks();
+	}
+	
+	
+	
+//	@GetMapping(
+//	        value = "/{id}/image",
+//	        produces = org.springframework.http.MediaType.IMAGE_PNG_VALUE
+//	)
+//	public byte[] getBookImage(@PathVariable Long id) throws IOException {
+//
+//	    Path imagePath = Paths.get("uploads/books", id + ".png");
+//
+//	    if (!Files.exists(imagePath)) {
+//	        throw new ResourceNotFoundException("Image not found");
+//	    }
+//
+//	    return Files.readAllBytes(imagePath);
+//	}
+
+	
+	@GetMapping("/filter")
+	public List<BookDto> filterBooks(
+	        @RequestParam(required = false) String name,
+	        @RequestParam(required = false) String author,
+	        @RequestParam(required = false) Double maxPrice
+	) {
+	    return bookService.filterBooks(name, author, maxPrice);
+	}
+
+
+}
+package com.bookstore.controller;
+
+import com.bookstore.dto.CartItemDto;
+import com.bookstore.dto.CartResponseDto;
+import com.bookstore.service.CartService;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/cart")
+public class CartController {
+
+    private final CartService cartService;
+
+    public CartController(CartService cartService) {
+        this.cartService = cartService;
+    }
+
+    @PostMapping("/add")
+    public void add(@RequestBody CartItemDto dto) {
+        cartService.addToCart(dto);
+    }
+
+    @GetMapping
+    public CartResponseDto view() {
+        return cartService.getMyCart();
+    }
+
+    @PutMapping("/update")
+    public void update(@RequestBody CartItemDto dto) {
+        cartService.updateQuantity(dto);
+    }
+
+    @DeleteMapping("/remove/{bookId}")
+    public void remove(@PathVariable Long bookId) {
+        cartService.removeItem(bookId);
+    }
+
+    @DeleteMapping("/clear")
+    public void clear() {
+        cartService.clearCart();
+    }
+}
+package com.bookstore.controller;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
+
+@RestController
+public class ConfigController {
+
+	@Value("${spring.application.name:bookstore}")
+	private String appName;
+
+	// GET /api/config
+	@GetMapping("/api/config")
+	public Map<String, String> config() {
+		return Map.of("application", appName, "version", "1.0.0", "environment", "local");
+	}
+}
+package com.bookstore.controller;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
+
+@RestController
+public class HealthController {
+
+	// GET /api/health
+	@GetMapping("/api/health")
+	public Map<String, String> health() {
+		return Map.of("status", "UP", "service", "BookStore API");
+	}
+}
+package com.bookstore.controller;
+
+import com.bookstore.entity.Order;
+import com.bookstore.service.OrderService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/orders")
+//@RequiredArgsConstructor
+public class OrderController {
+
+	private final OrderService orderService;
+
+	public OrderController(OrderService orderService) {
+		super();
+		this.orderService = orderService;
+	}
+
+	@PostMapping("/place")
+	public Order place() {
+		return orderService.placeOrder();
+	}
+
+	@GetMapping("/my")
+	public List<Order> myOrders() {
+		return orderService.getMyOrders();
+	}
+
+	@GetMapping("/{id}")
+	public Order view(@PathVariable Long id) {
+		return orderService.getOrderById(id);
+	}
+}
+package com.bookstore.controller;
+
+import com.bookstore.dto.PaymentRequestDto;
+import com.bookstore.dto.PaymentVerifyDto;
+import com.bookstore.entity.Payment;
+import com.bookstore.service.PaymentService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/payments")
+//@RequiredArgsConstructor
+public class PaymentController {
+
+	private final PaymentService paymentService;
+
+	public PaymentController(PaymentService paymentService) {
+		super();
+		this.paymentService = paymentService;
+	}
+
+	// POST /api/payments/initiate
+	@PostMapping("/initiate")
+	public Payment initiate(@RequestBody PaymentRequestDto dto) {
+		return paymentService.initiatePayment(dto.getOrderId());
+	}
+
+	// POST /api/payments/verify
+	@PostMapping("/verify")
+	public Payment verify(@RequestBody PaymentVerifyDto dto) {
+		return paymentService.verifyPayment(dto.getPaymentId(), dto.isSuccess());
+	}
+}
+package com.bookstore.controller;
+
+import com.bookstore.dto.RatingDto;
+import com.bookstore.entity.Rating;
+import com.bookstore.repository.RatingRepository;
+import com.bookstore.service.RatingService;
+import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/books")
+//@RequiredArgsConstructor
+public class RatingController {
+
+    private final RatingService ratingService;
+    private final RatingRepository ratingRepository;
+
+   
+    
+    public RatingController(RatingService ratingService, RatingRepository ratingRepository) {
+		super();
+		this.ratingService = ratingService;
+		this.ratingRepository = ratingRepository;
+	}
+
+	@PostMapping("/{bookId}/rating")
+    public ResponseEntity<?> addRating(@PathVariable Long bookId, @RequestBody RatingDto dto) {
+        ratingService.addRating(bookId, dto.getRating(), dto.getComment(), dto.getUsername());
+        
+        // Check if we want to return a more specific message
+        return ResponseEntity.ok(java.util.Map.of("message", "Rating saved successfully"));
+    }
+    
+    @GetMapping("/{bookId}/ratings")
+    public ResponseEntity<List<Rating>> getRatings(@PathVariable Long bookId) {
+        return ResponseEntity.ok(ratingService.getRatingsByBookId(bookId));
+    }
+    
+ // RatingController.java
+
+    @DeleteMapping("/{bookId}/rating")
+    public ResponseEntity<?> deleteRating(@PathVariable Long bookId) {
+        // Get the email from the Security Token
+        String authenticatedEmail = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication().getName();
+
+        // Call the service
+        ratingService.deleteRating(bookId, authenticatedEmail);
+
+        return ResponseEntity.ok(java.util.Map.of("message", "Review deleted successfully"));
+    }
+    
+}
+package com.bookstore.controller;
+
+import com.bookstore.entity.RoleType;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/roles")
+public class RolesController {
+
+	// GET /api/roles
+	@GetMapping
+	public List<String> getAllRoles() {
+		return List.of(RoleType.USER, RoleType.ADMIN);
+	}
+}
+package com.bookstore.controller;
+
+import com.bookstore.dto.UpdateProfileRequest;
+import com.bookstore.entity.User;
+import com.bookstore.service.UserService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/users")
+//@RequiredArgsConstructor
+public class UserController {
+
+	private final UserService userService;
+
+	public UserController(UserService userService) {
+		super();
+		this.userService = userService;
+	}
+
+	// GET /api/users/me
+	@GetMapping("/me")
+	public User getMyProfile() {
+		return userService.getCurrentUser();
+	}
+
+	// PUT /api/users/me
+	@PutMapping("/me")
+	public User updateMyProfile(@RequestBody UpdateProfileRequest request) {
+		return userService.updateProfile(request);
+	}
+}
+package com.bookstore.controller;
+
+import com.bookstore.entity.Wishlist;
+import com.bookstore.service.WishlistService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/wishlist")
+//@RequiredArgsConstructor
+public class WishlistController {
+
+	private final WishlistService wishlistService;
+
+	public WishlistController(WishlistService wishlistService) {
+		super();
+		this.wishlistService = wishlistService;
+	}
+
+	@PostMapping("/add/{bookId}")
+	public Wishlist add(@PathVariable Long bookId) {
+		return wishlistService.add(bookId);
+	}
+
+	@GetMapping
+	public List<Wishlist> getMyWishlist() {
+		return wishlistService.getMyWishlist();
+	}
+
+	@DeleteMapping("/remove/{bookId}")
+	public String remove(@PathVariable Long bookId) {
+		wishlistService.remove(bookId);
+		return "Removed from wishlist";
+	}
 }

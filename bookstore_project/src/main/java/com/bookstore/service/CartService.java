@@ -1,17 +1,17 @@
 package com.bookstore.service;
 
 import com.bookstore.dto.CartItemDto;
-import com.bookstore.entity.Cart;
+import com.bookstore.dto.CartResponseDto;
 
 public interface CartService {
 
-	Cart addToCart(CartItemDto dto);
+    void addToCart(CartItemDto dto);
 
-	Cart getMyCart();
+    CartResponseDto getMyCart();
 
-	Cart updateQuantity(CartItemDto dto);
+    void updateQuantity(CartItemDto dto);
 
-	void removeItem(Long bookId);
+    void removeItem(Long bookId);
 
-	void clearCart();
+    void clearCart();
 }
