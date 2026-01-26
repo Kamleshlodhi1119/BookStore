@@ -1,5 +1,7 @@
 package com.bookstore.service.impl;
 
+import com.bookstore.dto.AdminOrderItemDto;
+import com.bookstore.dto.response.AdminOrderResponseDto;
 import com.bookstore.dto.response.OrderItemResponseDto;
 import com.bookstore.dto.response.OrderResponseDto;
 import com.bookstore.entity.*;
@@ -32,6 +34,8 @@ public class OrderServiceImpl implements OrderService {
         this.userRepo = userRepo;
     }
 
+    // ---------------- AUTH ----------------
+
     private User currentUser() {
         String email = SecurityContextHolder.getContext()
                 .getAuthentication()
@@ -55,7 +59,6 @@ public class OrderServiceImpl implements OrderService {
             throw new ResourceNotFoundException("Cart has no items");
         }
 
-
         Order order = new Order();
         order.setUser(user);
         order.setStatus("PLACED");
@@ -77,19 +80,10 @@ public class OrderServiceImpl implements OrderService {
 
         Order savedOrder = orderRepo.save(order);
 
-        // clear cart
         cart.getItems().clear();
 
         return savedOrder;
     }
-
-    // ---------------- MY ORDERS ----------------
-//
-//    @Override
-//    @Transactional(readOnly = true)
-//    public List<Order> getMyOrders() {
-//        return orderRepo.findByUserWithItems(currentUser());
-//    }
 
     // ---------------- SINGLE ORDER ----------------
 
@@ -107,12 +101,76 @@ public class OrderServiceImpl implements OrderService {
         return order;
     }
 
-    // ---------------- ADMIN ----------------
+    // ---------------- USER ORDERS ----------------
 
     @Override
-    public List<Order> getAllOrders() {
-        return orderRepo.findAll();
+    @Transactional(readOnly = true)
+    public List<OrderResponseDto> getMyOrders() {
+
+        User user = currentUser();
+
+        return orderRepo.findByUserOrderByCreatedAtDesc(user)
+                .stream()
+                .map(o -> {
+                    OrderResponseDto dto = new OrderResponseDto();
+                    dto.setId(o.getId());
+                    dto.setStatus(o.getStatus());
+                    dto.setTotalAmount(o.getTotalAmount());
+                    dto.setCreatedAt(o.getCreatedAt());
+
+                    List<OrderItemResponseDto> items = o.getItems()
+                            .stream()
+                            .map(i -> {
+                                OrderItemResponseDto item = new OrderItemResponseDto();
+                                item.setBookId(i.getBook().getId());
+                                item.setTitle(i.getBook().getTitle());
+                                item.setQuantity(i.getQuantity());
+                                item.setPrice(i.getPriceAtPurchase());
+                                return item;
+                            })
+                            .toList();
+
+                    dto.setItems(items);
+                    return dto;
+                })
+                .toList();
     }
+
+    // ---------------- ADMIN ORDERS ----------------
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AdminOrderResponseDto> getAllOrdersForAdmin() {
+
+        return orderRepo.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(o -> {
+                    AdminOrderResponseDto dto = new AdminOrderResponseDto();
+                    dto.setId(o.getId());
+                    dto.setStatus(o.getStatus());
+                    dto.setTotalAmount(o.getTotalAmount());
+                    dto.setCreatedAt(o.getCreatedAt());
+                    dto.setUserEmail(o.getUser().getEmail());
+
+                    List<AdminOrderItemDto> items = o.getItems()
+                            .stream()
+                            .map(i -> {
+                                AdminOrderItemDto item = new AdminOrderItemDto();
+                                item.setBookId(i.getBook().getId());
+                                item.setTitle(i.getBook().getTitle());
+                                item.setQuantity(i.getQuantity());
+                                item.setPrice(i.getPriceAtPurchase());
+                                return item;
+                            })
+                            .toList();
+
+                    dto.setItems(items);
+                    return dto;
+                })
+                .toList();
+    }
+
+    // ---------------- ADMIN UPDATE ----------------
 
     @Override
     public void updateOrderStatus(Long orderId, String status) {
@@ -123,37 +181,4 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(status);
         orderRepo.save(order);
     }
-    
-    
-    
-   
-    @Override
-public List<OrderResponseDto> getMyOrders() {
-
-    User user = currentUser();
-
-    List<Order> orders = orderRepo.findOrdersWithItems(user);
-
-    return orders.stream().map(o -> {
-        OrderResponseDto dto = new OrderResponseDto();
-        dto.setId(o.getId());
-        dto.setStatus(o.getStatus());
-        dto.setTotalAmount(o.getTotalAmount());
-        dto.setCreatedAt(o.getCreatedAt());
-
-        List<OrderItemResponseDto> items = o.getItems().stream().map(i -> {
-            OrderItemResponseDto item = new OrderItemResponseDto();
-            item.setBookId(i.getBook().getId());
-            item.setTitle(i.getBook().getTitle());
-            item.setQuantity(i.getQuantity());
-            item.setPrice(i.getPriceAtPurchase());
-            return item;
-        }).toList();
-
-        dto.setItems(items);
-        return dto;
-    }).toList();
-}
-
-    
 }

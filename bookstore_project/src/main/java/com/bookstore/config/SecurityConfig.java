@@ -35,117 +35,61 @@ public class SecurityConfig {
 		super();
 		this.jwtFilter = jwtFilter;
 	}
-
-	// -------------------------
-    // PASSWORD ENCODER
-    // -------------------------
+    
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
-    // -------------------------
-    // AUTH MANAGER
-    // -------------------------
+    
     @Bean
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
-    // -------------------------
-    // SECURITY FILTER CHAIN
-    // -------------------------
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-            // ✅ CORS enabled (uses corsConfigurationSource bean)
             .cors(Customizer.withDefaults())
-
-            // ❌ CSRF not needed (JWT)
             .csrf(csrf -> csrf.disable())
-
-            // ❌ Session not needed (JWT)
             .sessionManagement(sm ->
                 sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
-
             .authorizeHttpRequests(auth -> auth
-
-                // ✅ Allow preflight
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
-                // ---------- PUBLIC APIs ----------
                 .requestMatchers(
                     "/api/auth/**",
                     "/api/books/**",
                     "/api/authors/**",
                     "/api/roles",
                     "/api/health",
+                    "/api/config",
+                    "/images/**",
                     "/v3/api-docs/**",
                     "/swagger-ui/**",
-                    "/swagger-ui.html"
+                    "/swagger-ui.html",
+                    "/actuator/health/**"
                 ).permitAll()
-                .requestMatchers("/images/**").permitAll()
-
-                // ---------- USER / ADMIN ----------
                 .requestMatchers(
                     "/api/cart/**",
                     "/api/wishlist/**",
                     "/api/orders/**",
-                    "/api/ratings/**",
+                    "/api/books/*/rating",
+                    "/api/books/*/ratings",
                     "/api/payments/**",
-                    "/api/users/me/**",
-                    "/api/admin/users/getall/**"
+                    "/api/users/**"
                 ).hasAnyRole("USER", "ADMIN")
-
-                // ---------- ADMIN ONLY ----------
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-
-                // ---------- EVERYTHING ELSE ----------
+                .requestMatchers(
+                    "/api/admin/**"
+                ).hasRole("ADMIN")
                 .anyRequest().authenticated()
             );
 
-        // ✅ JWT filter
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
-    }
-
-    // -------------------------
-    // GLOBAL CORS CONFIG
-    // -------------------------
-//    @Bean
-//    public CorsConfigurationSource corsConfigurationSource() {
-//
-//        CorsConfiguration config = new CorsConfiguration();
-//
-//        // ✅ ONLY Render UI allowed
-//        config.addAllowedOrigin("https://book-store-ui-xuao.onrender.com");
-//
-//        // (optional dev support)
-//        // config.addAllowedOrigin("http://localhost:4200");
-//
-//        config.setAllowedMethods(
-//            List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
-//        );
-//
-//        config.setAllowedHeaders(List.of("*"));
-//        config.setExposedHeaders(List.of("Authorization"));
-//
-//        // 🔥 JWT header auth → cookies not needed
-//        config.setAllowCredentials(false);
-//
-//        UrlBasedCorsConfigurationSource source =
-//                new UrlBasedCorsConfigurationSource();
-//        source.registerCorsConfiguration("/**", config);
-//
-//        return source;
-//    }
-    
-    
-    
+    }    
     
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

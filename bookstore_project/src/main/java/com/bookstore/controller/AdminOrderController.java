@@ -1,5 +1,6 @@
 package com.bookstore.controller;
 
+import com.bookstore.dto.response.AdminOrderResponseDto;
 import com.bookstore.entity.Order;
 import com.bookstore.service.OrderService;
 import lombok.RequiredArgsConstructor;
@@ -20,9 +21,10 @@ public class AdminOrderController {
 	}
 
 	@GetMapping
-	public List<Order> allOrders() {
-		return orderService.getAllOrders();
+	public List<AdminOrderResponseDto> allOrders() {
+	    return orderService.getAllOrdersForAdmin();
 	}
+
 
 	@PutMapping("/{id}/status")
 	public String updateStatus(@PathVariable Long id, @RequestParam String status) {
