@@ -5,6 +5,7 @@ import com.bookstore.entity.Book;
 import com.bookstore.exception.ResourceNotFoundException;
 import com.bookstore.repository.BookRepository;
 import com.bookstore.service.BookService;
+import com.bookstore.service.SupabaseStorageService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,12 +25,18 @@ public class AdminBookController {
 
     private final BookService bookService;
     private final BookRepository bookRepository;
+    private final SupabaseStorageService storageService;
 
-    public AdminBookController(BookService bookService, BookRepository bookRepository) {
-        super();
-        this.bookService = bookService;
-        this.bookRepository = bookRepository;
-    }
+
+    public AdminBookController(BookService bookService,
+            BookRepository bookRepository,
+            SupabaseStorageService storageService) {
+
+			this.bookService = bookService;
+			this.bookRepository = bookRepository;
+			this.storageService = storageService;
+			}
+
 
     // ---------------- CREATE BOOK ----------------
     @PostMapping
@@ -60,26 +67,45 @@ public class AdminBookController {
     }
 
     // ---------------- IMAGE UPLOAD ----------------
+//    @PostMapping("/{id}/image")
+//    public void uploadImage(
+//            @PathVariable Long id,
+//            @RequestParam("file") MultipartFile file
+//    ) throws IOException {
+//
+//        Path uploadDir = Paths.get("uploads/books");
+//        Files.createDirectories(uploadDir);
+//
+//        Path imagePath = uploadDir.resolve(id + ".png");
+//        Files.write(imagePath, file.getBytes());
+//
+//        Book book = bookRepository.findById(id)
+//                .orElseThrow(() -> new ResourceNotFoundException("Book not found"));
+//
+//        // ✅ ONLY CHANGE IS HERE
+//        book.setImageUrl("/images/books/" + id + ".png");
+//
+//        bookRepository.save(book);
+//    }
+    
+    
     @PostMapping("/{id}/image")
     public void uploadImage(
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file
-    ) throws IOException {
-
-        Path uploadDir = Paths.get("uploads/books");
-        Files.createDirectories(uploadDir);
-
-        Path imagePath = uploadDir.resolve(id + ".png");
-        Files.write(imagePath, file.getBytes());
+    ) {
 
         Book book = bookRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Book not found"));
 
-        // ✅ ONLY CHANGE IS HERE
-        book.setImageUrl("/images/books/" + id + ".png");
+        // Upload to Supabase
+        String publicUrl = storageService.uploadBookImage(id, file);
 
+        // Save URL in DB
+        book.setImageUrl(publicUrl);
         bookRepository.save(book);
     }
+
 
     // ---------------- PUBLIC READ APIs ----------------
     @GetMapping("/{id}")
