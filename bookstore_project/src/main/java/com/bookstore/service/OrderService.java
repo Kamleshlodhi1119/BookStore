@@ -1,6 +1,6 @@
 package com.bookstore.service;
 
-import com.bookstore.dto.OrderResponseDto;
+import com.bookstore.dto.response.OrderResponseDto;
 import com.bookstore.entity.Order;
 import java.util.List;
 

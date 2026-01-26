@@ -19,4 +19,14 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByUserWithItems(@Param("user") User user);
 
     List<Order> findByUser(User user);
+    
+    @Query("""
+    		  select distinct o from Order o
+    		  left join fetch o.items i
+    		  left join fetch i.book
+    		  where o.user = :user
+    		  order by o.createdAt desc
+    		""")
+    		List<Order> findOrdersWithItems(@Param("user") User user);
+
 }

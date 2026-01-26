@@ -1,6 +1,6 @@
 package com.bookstore.controller;
 
-import com.bookstore.dto.OrderResponseDto;
+import com.bookstore.dto.response.OrderResponseDto;
 import com.bookstore.entity.Order;
 import com.bookstore.service.OrderService;
 import lombok.RequiredArgsConstructor;

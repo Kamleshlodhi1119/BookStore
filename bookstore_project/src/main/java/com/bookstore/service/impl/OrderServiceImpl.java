@@ -1,7 +1,7 @@
 package com.bookstore.service.impl;
 
-import com.bookstore.dto.OrderItemResponseDto;
-import com.bookstore.dto.OrderResponseDto;
+import com.bookstore.dto.response.OrderItemResponseDto;
+import com.bookstore.dto.response.OrderResponseDto;
 import com.bookstore.entity.*;
 import com.bookstore.exception.ResourceNotFoundException;
 import com.bookstore.repository.CartRepository;
@@ -126,36 +126,34 @@ public class OrderServiceImpl implements OrderService {
     
     
     
+   
     @Override
-    public List<OrderResponseDto> getMyOrders() {
+public List<OrderResponseDto> getMyOrders() {
 
-        User user = currentUser();
+    User user = currentUser();
 
-        return orderRepo.findByUserWithItems(user)
-                .stream()
-                .map(order -> {
+    List<Order> orders = orderRepo.findOrdersWithItems(user);
 
-                    OrderResponseDto dto = new OrderResponseDto();
-                    dto.setId(order.getId());
-                    dto.setStatus(order.getStatus());
-                    dto.setTotalAmount(order.getTotalAmount());
-                    dto.setCreatedAt(order.getCreatedAt());
+    return orders.stream().map(o -> {
+        OrderResponseDto dto = new OrderResponseDto();
+        dto.setId(o.getId());
+        dto.setStatus(o.getStatus());
+        dto.setTotalAmount(o.getTotalAmount());
+        dto.setCreatedAt(o.getCreatedAt());
 
-                    dto.setItems(
-                        order.getItems().stream().map(oi -> {
-                            OrderItemResponseDto i = new OrderItemResponseDto();
-                            i.setBookId(oi.getBook().getId());
-                            i.setTitle(oi.getBook().getTitle());
-                            i.setImageUrl(oi.getBook().getImageUrl());
-                            i.setQuantity(oi.getQuantity());
-                            i.setPrice(oi.getPriceAtPurchase());
-                            return i;
-                        }).toList()
-                    );
+        List<OrderItemResponseDto> items = o.getItems().stream().map(i -> {
+            OrderItemResponseDto item = new OrderItemResponseDto();
+            item.setBookId(i.getBook().getId());
+            item.setTitle(i.getBook().getTitle());
+            item.setQuantity(i.getQuantity());
+            item.setPrice(i.getPriceAtPurchase());
+            return item;
+        }).toList();
 
-                    return dto;
-                })
-                .toList();
-    }
+        dto.setItems(items);
+        return dto;
+    }).toList();
+}
+
     
 }

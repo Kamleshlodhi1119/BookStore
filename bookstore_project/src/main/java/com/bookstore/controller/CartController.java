@@ -1,7 +1,7 @@
 package com.bookstore.controller;
 
 import com.bookstore.dto.CartItemDto;
-import com.bookstore.dto.CartResponseDto;
+import com.bookstore.dto.response.CartResponseDto;
 import com.bookstore.service.CartService;
 import org.springframework.web.bind.annotation.*;
 

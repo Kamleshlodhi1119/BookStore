@@ -1,7 +1,7 @@
 package com.bookstore.service;
 
 import com.bookstore.dto.CartItemDto;
-import com.bookstore.dto.CartResponseDto;
+import com.bookstore.dto.response.CartResponseDto;
 
 public interface CartService {
 

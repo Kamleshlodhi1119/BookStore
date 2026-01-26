@@ -1,13 +1,11 @@
-package com.bookstore.dto;
+package com.bookstore.dto.response;
 
-
-
-public class OrderItemResponseDto {
+public class CartItemResponseDto {
     private Long bookId;
     private String title;
-    private String imageUrl;
-    private int quantity;
     private double price;
+    private int quantity;
+    private String imageUrl;
 	public Long getBookId() {
 		return bookId;
 	}
@@ -20,11 +18,11 @@ public class OrderItemResponseDto {
 	public void setTitle(String title) {
 		this.title = title;
 	}
-	public String getImageUrl() {
-		return imageUrl;
+	public double getPrice() {
+		return price;
 	}
-	public void setImageUrl(String imageUrl) {
-		this.imageUrl = imageUrl;
+	public void setPrice(double price) {
+		this.price = price;
 	}
 	public int getQuantity() {
 		return quantity;
@@ -32,15 +30,12 @@ public class OrderItemResponseDto {
 	public void setQuantity(int quantity) {
 		this.quantity = quantity;
 	}
-	public double getPrice() {
-		return price;
+	public String getImageUrl() {
+		return imageUrl;
 	}
-	public void setPrice(double price) {
-		this.price = price;
+	public void setImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
 	}
-
     
     
-    
-    // getters & setters
 }

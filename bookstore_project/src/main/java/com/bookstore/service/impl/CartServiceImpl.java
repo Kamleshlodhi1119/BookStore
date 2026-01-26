@@ -1,8 +1,8 @@
 package com.bookstore.service.impl;
 
 import com.bookstore.dto.CartItemDto;
-import com.bookstore.dto.CartItemResponseDto;
-import com.bookstore.dto.CartResponseDto;
+import com.bookstore.dto.response.CartItemResponseDto;
+import com.bookstore.dto.response.CartResponseDto;
 import com.bookstore.entity.*;
 import com.bookstore.exception.ResourceNotFoundException;
 import com.bookstore.repository.*;

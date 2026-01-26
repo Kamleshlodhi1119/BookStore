@@ -1,9 +1,9 @@
 package com.bookstore.controller;
 
 import com.bookstore.dto.LoginRequest;
-import com.bookstore.dto.LoginResponse;
 import com.bookstore.dto.RegisterRequest;
 import com.bookstore.dto.UpdateProfileRequest;
+import com.bookstore.dto.response.LoginResponse;
 import com.bookstore.entity.Author;
 import com.bookstore.entity.RoleType;
 import com.bookstore.entity.User;
