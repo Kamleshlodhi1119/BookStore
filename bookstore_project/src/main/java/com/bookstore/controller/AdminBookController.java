@@ -6,9 +6,12 @@ import com.bookstore.exception.ResourceNotFoundException;
 import com.bookstore.repository.BookRepository;
 import com.bookstore.service.BookService;
 import com.bookstore.service.SupabaseStorageService;
+import com.bookstore.service.impl.BulkBookServiceimpl;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,15 +29,18 @@ public class AdminBookController {
     private final BookService bookService;
     private final BookRepository bookRepository;
     private final SupabaseStorageService storageService;
+    private final BulkBookServiceimpl bulkBookServiceimpl;
+
 
 
     public AdminBookController(BookService bookService,
             BookRepository bookRepository,
-            SupabaseStorageService storageService) {
+            SupabaseStorageService storageService,BulkBookServiceimpl bulkBookServiceimpl) {
 
 			this.bookService = bookService;
 			this.bookRepository = bookRepository;
 			this.storageService = storageService;
+			this.bulkBookServiceimpl=bulkBookServiceimpl;
 			}
 
 
@@ -137,4 +143,18 @@ public class AdminBookController {
     public List<BookDto> latest() {
         return bookService.getLatestBooks();
     }
+    
+    
+    @PostMapping("/bulk-upload")
+    public ResponseEntity<?> bulkUpload(@RequestParam("file") MultipartFile file) {
+
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body("File is empty");
+        }
+
+        int imported = bulkBookServiceimpl.importCsv(file);
+        return ResponseEntity.ok("Imported " + imported + " books successfully");
+    }
+
+
 }

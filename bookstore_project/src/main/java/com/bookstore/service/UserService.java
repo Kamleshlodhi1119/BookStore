@@ -24,4 +24,8 @@ public interface UserService {
 
 	void deleteUser(Long id);
 
+	void changePassword(String currentPassword, String newPassword, String confirmPassword);
+	void forgotPassword(String email);
+	void resetPassword(String token, String newPassword, String confirmPassword);
+
 }

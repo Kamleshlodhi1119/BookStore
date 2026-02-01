@@ -19,6 +19,9 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import com.bookstore.dto.ChangePasswordRequest;
+import com.bookstore.dto.ForgotPasswordRequest;
+import com.bookstore.dto.ResetPasswordRequest;
 
 //@CrossOrigin(origins = "https://books-storeapp.netlify.app")
 @RestController
@@ -90,4 +93,41 @@ public class AuthController {
 	public Author getAuthor(@PathVariable Long id) {
 		return authorService.getAuthorById(id);
 	}
+	
+	@PutMapping("/password/change")
+	public ResponseEntity<?> changePassword(
+	        @RequestBody ChangePasswordRequest request) {
+
+	    userService.changePassword(
+	            request.getCurrentPassword(),
+	            request.getNewPassword(),
+	            request.getConfirmPassword()
+	    );
+
+	    return ResponseEntity.ok("Password updated successfully");
+	}
+
+	@PostMapping("/password/forgot")
+	public ResponseEntity<?> forgotPassword(
+	        @RequestBody ForgotPasswordRequest request) {
+
+	    userService.forgotPassword(request.getEmail());
+	    return ResponseEntity.ok("Reset link sent");
+	}
+
+	
+	@PostMapping("/password/reset")
+	public ResponseEntity<?> resetPassword(
+	        @RequestBody ResetPasswordRequest request) {
+
+	    userService.resetPassword(
+	            request.getToken(),
+	            request.getNewPassword(),
+	            request.getConfirmPassword()
+	    );
+
+	    return ResponseEntity.ok("Password reset successful");
+	}
+
+	
 }

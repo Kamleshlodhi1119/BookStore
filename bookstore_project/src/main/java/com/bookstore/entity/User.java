@@ -20,6 +20,12 @@ public class User {
 
 	@Column(nullable = false)
 	private String passwordHash;
+	
+	@OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+	private UserProfile profile;
+
+	
+	
 
 	@ElementCollection(fetch = FetchType.EAGER)
 	@CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))

@@ -82,5 +82,64 @@ public class SupabaseStorageService {
         }
         return name.substring(name.lastIndexOf('.') + 1).toLowerCase();
     }
+    
+    
+  public String uploadProfileAvatar(Long userId, MultipartFile file) {
+    try {
+        String extension = getExtension(file.getOriginalFilename());
+        String filename = "avatar-" + userId + "-" + UUID.randomUUID() + "." + extension;
+
+        // Folder path (DO NOT URL-ENCODE THIS)
+        String objectPath = "profile-avt/" + filename;
+
+        // Encode ONLY the filename
+        String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8);
+
+        String uploadUrl =
+                supabaseUrl +
+                "/storage/v1/object/" +
+                bucket +
+                "/profile-avt/" +
+                encodedFilename;
+
+        System.out.println("UPLOAD URL = " + uploadUrl);
+        System.out.println("CONTENT TYPE = " + file.getContentType());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + serviceKey);
+        headers.set("apikey", serviceKey);
+        headers.set("x-upsert", "true");
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+
+        HttpEntity<byte[]> request = new HttpEntity<>(file.getBytes(), headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                uploadUrl,
+                HttpMethod.POST,
+                request,
+                String.class
+        );
+
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new RuntimeException("Upload failed: " + response.getBody());
+        }
+
+        // Public URL (DO NOT encode here either)
+        return supabaseUrl +
+                "/storage/v1/object/public/" +
+                bucket +
+                "/profile-avt/" +
+                filename;
+
+    } catch (HttpStatusCodeException e) {
+        System.out.println("SUPABASE STATUS = " + e.getStatusCode());
+        System.out.println("SUPABASE ERROR BODY = " + e.getResponseBodyAsString());
+        throw new RuntimeException("Upload failed: " + e.getResponseBodyAsString(), e);
+    } catch (Exception e) {
+        e.printStackTrace();
+        throw new RuntimeException("Upload failed", e);
+    }
+}
+
 
 }

@@ -69,7 +69,10 @@ public class SecurityConfig {
                     "/v3/api-docs/**",
                     "/swagger-ui/**",
                     "/swagger-ui.html",
-                    "/actuator/health/**"
+                    "/actuator/health/**",
+                    "/api/auth/password/forgot/**",
+                    "/api/auth/password/reset/**",
+                    "/api/auth/password/change/**"
                 ).permitAll()
                 .requestMatchers(
                     "/api/cart/**",
@@ -78,8 +81,10 @@ public class SecurityConfig {
                     "/api/books/*/rating",
                     "/api/books/*/ratings",
                     "/api/payments/**",
-                    "/api/users/**"
+                    "/api/users/**",
+                    "/api/profile/**"
                 ).hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers(
                     "/api/admin/**"
                 ).hasRole("ADMIN")

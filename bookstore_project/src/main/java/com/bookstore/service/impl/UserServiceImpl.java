@@ -14,6 +14,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Set;
+import com.bookstore.entity.PasswordResetToken;
+import com.bookstore.repository.PasswordResetTokenRepository;
+
+import java.time.Instant;
+import java.util.UUID;
 
 @Service
 //@RequiredArgsConstructor
@@ -21,12 +26,17 @@ public class UserServiceImpl implements UserService {
 
 	private final UserRepository repo;
 	private final PasswordEncoder encoder;
+	private final PasswordResetTokenRepository tokenRepo;
 
-	public UserServiceImpl(UserRepository repo, PasswordEncoder encoder) {
-		super();
-		this.repo = repo;
-		this.encoder = encoder;
-	}
+
+	public UserServiceImpl(UserRepository repo,
+            PasswordEncoder encoder,
+            PasswordResetTokenRepository tokenRepo) {
+this.repo = repo;
+this.encoder = encoder;
+this.tokenRepo = tokenRepo;
+}
+
 
 	@Override
 	public User register(RegisterRequest request) {
@@ -77,4 +87,72 @@ public class UserServiceImpl implements UserService {
 	public void deleteUser(Long id) {
 		repo.deleteById(id);
 	}
+	
+	@Override
+	public void changePassword(String currentPassword,
+	                           String newPassword,
+	                           String confirmPassword) {
+
+	    User user = getCurrentUser();
+
+	    if (!encoder.matches(currentPassword, user.getPasswordHash())) {
+	        throw new RuntimeException("Current password incorrect");
+	    }
+
+	    if (!newPassword.equals(confirmPassword)) {
+	        throw new RuntimeException("Passwords do not match");
+	    }
+
+	    user.setPasswordHash(encoder.encode(newPassword));
+	    repo.save(user);
+
+	    tokenRepo.deleteByUserId(user.getId());
+	}
+
+	
+	@Override
+	public void forgotPassword(String email) {
+
+	    User user = findByEmail(email);
+
+	    tokenRepo.deleteByUserId(user.getId());
+
+	    String token = UUID.randomUUID().toString();
+
+	    PasswordResetToken resetToken = new PasswordResetToken();
+	    resetToken.setToken(token);
+	    resetToken.setUser(user);
+	    resetToken.setExpiryTime(Instant.now().plusSeconds(900)); // 15 min
+
+	    tokenRepo.save(resetToken);
+
+	    // EMAIL INTEGRATION GOES HERE
+	    System.out.println("RESET LINK:");
+	    System.out.println("http://localhost:4200/reset-password?token=" + token);
+	}
+
+	
+	@Override
+	public void resetPassword(String token,
+	                          String newPassword,
+	                          String confirmPassword) {
+
+	    PasswordResetToken resetToken = tokenRepo.findByToken(token)
+	            .orElseThrow(() -> new RuntimeException("Invalid token"));
+
+	    if (resetToken.getExpiryTime().isBefore(Instant.now())) {
+	        throw new RuntimeException("Token expired");
+	    }
+
+	    if (!newPassword.equals(confirmPassword)) {
+	        throw new RuntimeException("Passwords do not match");
+	    }
+
+	    User user = resetToken.getUser();
+	    user.setPasswordHash(encoder.encode(newPassword));
+	    repo.save(user);
+
+	    tokenRepo.delete(resetToken);
+	}
+
 }
