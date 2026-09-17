@@ -17,7 +17,7 @@ public class JwtTokenProvider {
 
     public JwtTokenProvider(
             @Value("${bookstore.jwt.secret:}") String secret,
-            @Value("${bookstore.jwt.expirationMs:86400000}") long expirationMs
+            @Value("${bookstore.jwt.expirationMs:600000}") long expirationMs
     ) {
 
         // 🔥 FALLBACK SECRET (TEMPORARY)
