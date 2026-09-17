@@ -2,7 +2,7 @@ package com.bookstore.controller;
 
 import com.bookstore.dto.UpdateProfileDetailsRequest;
 import com.bookstore.dto.UserProfileDto;
-import com.bookstore.service.SupabaseStorageService;
+import com.bookstore.service.CloudinaryStorageService;
 import com.bookstore.service.UserProfileService;
 
 import lombok.RequiredArgsConstructor;
@@ -16,16 +16,15 @@ import org.springframework.web.multipart.MultipartFile;
 public class UserProfileController {
 
     private final UserProfileService profileService;
-    private final SupabaseStorageService storageService;
-    
+    private final CloudinaryStorageService storageService;
 
-    public UserProfileController(UserProfileService profileService, SupabaseStorageService storageService) {
-		super();
-		this.profileService = profileService;
-		this.storageService = storageService;
-	}
+    public UserProfileController(UserProfileService profileService, CloudinaryStorageService storageService) {
+        super();
+        this.profileService = profileService;
+        this.storageService = storageService;
+    }
 
-	// ---------------- GET MY PROFILE ----------------
+    // ---------------- GET MY PROFILE ----------------
     @GetMapping("/me")
     public ResponseEntity<UserProfileDto> getMyProfile() {
         return ResponseEntity.ok(profileService.getMyProfile());
@@ -78,7 +77,6 @@ public class UserProfileController {
 
         return ResponseEntity.ok(publicUrl);
     }
-
 
     // ---------------- UPDATE AVATAR (URL) ----------------
     @PostMapping("/avatar")

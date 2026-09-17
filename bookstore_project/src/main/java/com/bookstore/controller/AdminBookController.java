@@ -5,7 +5,7 @@ import com.bookstore.entity.Book;
 import com.bookstore.exception.ResourceNotFoundException;
 import com.bookstore.repository.BookRepository;
 import com.bookstore.service.BookService;
-import com.bookstore.service.SupabaseStorageService;
+import com.bookstore.service.CloudinaryStorageService;
 import com.bookstore.service.impl.BulkBookServiceimpl;
 
 import lombok.RequiredArgsConstructor;
@@ -28,21 +28,18 @@ public class AdminBookController {
 
     private final BookService bookService;
     private final BookRepository bookRepository;
-    private final SupabaseStorageService storageService;
+    private final CloudinaryStorageService storageService;
     private final BulkBookServiceimpl bulkBookServiceimpl;
-
-
 
     public AdminBookController(BookService bookService,
             BookRepository bookRepository,
-            SupabaseStorageService storageService,BulkBookServiceimpl bulkBookServiceimpl) {
+            CloudinaryStorageService storageService, BulkBookServiceimpl bulkBookServiceimpl) {
 
-			this.bookService = bookService;
-			this.bookRepository = bookRepository;
-			this.storageService = storageService;
-			this.bulkBookServiceimpl=bulkBookServiceimpl;
-			}
-
+        this.bookService = bookService;
+        this.bookRepository = bookRepository;
+        this.storageService = storageService;
+        this.bulkBookServiceimpl = bulkBookServiceimpl;
+    }
 
     // ---------------- CREATE BOOK ----------------
     @PostMapping
@@ -73,28 +70,27 @@ public class AdminBookController {
     }
 
     // ---------------- IMAGE UPLOAD ----------------
-//    @PostMapping("/{id}/image")
-//    public void uploadImage(
-//            @PathVariable Long id,
-//            @RequestParam("file") MultipartFile file
-//    ) throws IOException {
+// 	@PostMapping("/{id}/image")
+// 	public void uploadImage(
+// 			@PathVariable Long id,
+// 			@RequestParam("file") MultipartFile file
+// 	) throws IOException {
 //
-//        Path uploadDir = Paths.get("uploads/books");
-//        Files.createDirectories(uploadDir);
+// 		Path uploadDir = Paths.get("uploads/books");
+// 		Files.createDirectories(uploadDir);
 //
-//        Path imagePath = uploadDir.resolve(id + ".png");
-//        Files.write(imagePath, file.getBytes());
+// 		Path imagePath = uploadDir.resolve(id + ".png");
+// 		Files.write(imagePath, file.getBytes());
 //
-//        Book book = bookRepository.findById(id)
-//                .orElseThrow(() -> new ResourceNotFoundException("Book not found"));
+// 		Book book = bookRepository.findById(id)
+// 				.orElseThrow(() -> new ResourceNotFoundException("Book not found"));
 //
-//        // ✅ ONLY CHANGE IS HERE
-//        book.setImageUrl("/images/books/" + id + ".png");
+// 		// ✅ ONLY CHANGE IS HERE
+// 		book.setImageUrl("/images/books/" + id + ".png");
 //
-//        bookRepository.save(book);
-//    }
-    
-    
+// 		bookRepository.save(book);
+// 	}
+
     @PostMapping("/{id}/image")
     public void uploadImage(
             @PathVariable Long id,
@@ -104,14 +100,13 @@ public class AdminBookController {
         Book book = bookRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Book not found"));
 
-        // Upload to Supabase
+        // Upload to Cloudinary
         String publicUrl = storageService.uploadBookImage(id, file);
 
         // Save URL in DB
         book.setImageUrl(publicUrl);
         bookRepository.save(book);
     }
-
 
     // ---------------- PUBLIC READ APIs ----------------
     @GetMapping("/{id}")
@@ -143,8 +138,7 @@ public class AdminBookController {
     public List<BookDto> latest() {
         return bookService.getLatestBooks();
     }
-    
-    
+
     @PostMapping("/bulk-upload")
     public ResponseEntity<?> bulkUpload(@RequestParam("file") MultipartFile file) {
 
@@ -155,6 +149,5 @@ public class AdminBookController {
         int imported = bulkBookServiceimpl.importCsv(file);
         return ResponseEntity.ok("Imported " + imported + " books successfully");
     }
-
 
 }
