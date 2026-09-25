@@ -46,6 +46,12 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
+        <!-- Keep-Alive Health Monitoring -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- ========================= -->
         <!-- Database -->
         <!-- ========================= -->
@@ -56,17 +62,21 @@
             <scope>runtime</scope>
         </dependency>
 
-<dependency>
-    <groupId>com.cloudinary</groupId>
-    <artifactId>cloudinary-http44</artifactId>
-    <version>1.36.0</version>
-    <exclusions>
-        <exclusion>
-            <groupId>commons-logging</groupId>
-            <artifactId>commons-logging</artifactId>
-        </exclusion>
-    </exclusions>
-</dependency>
+        <!-- ========================= -->
+        <!-- Cloudinary SDK -->
+        <!-- ========================= -->
+        <dependency>
+            <groupId>com.cloudinary</groupId>
+            <artifactId>cloudinary-http44</artifactId>
+            <version>1.36.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
         <!-- ========================= -->
         <!-- Validation -->
         <!-- ========================= -->
@@ -158,22 +168,11 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-        
-        
-        <!-- ========================= -->
-        <!-- Cloudinary SDK -->
-        <!-- ========================= -->
-        <dependency>
-            <groupId>com.cloudinary</groupId>
-            <artifactId>cloudinary-http44</artifactId>
-            <version>1.36.0</version>
-        </dependency>
-        
-        
 
     </dependencies>
 
     <build>
+        <finalName>app</finalName>
         <plugins>
 
             <!-- ========================= -->
@@ -188,7 +187,7 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>${lombok.version}</version> <!-- FIX: Resolves Lombok version from spring-boot-starter-parent properties -->
+                            <version>${lombok.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
